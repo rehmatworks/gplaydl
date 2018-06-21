@@ -58,7 +58,9 @@ gplaydl -id com.rayark.Cytus.full
 
 Upload a specific device by code (Defaults to `bacon`) ([Available Devices](https://github.com/NoMore201/googleplay-api/blob/master/gpapi/device.properties)):
 
-`gplaydl -id com.whatsapp -dc angler` 
+```
+gplaydl -id com.whatsapp -dc angler
+```
 
 ### Features:
 * No need to provide device ID (Generated automatically))
