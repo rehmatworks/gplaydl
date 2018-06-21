@@ -100,6 +100,8 @@ def main():
 	try:
 		download = server.download(args.packageId, expansion_files=args.expansionfiles)
 		apkpath = os.path.join(storagepath, download['docId'] + '.apk')
+		if not os.path.isdir(storagepath)
+			os.makedirs(storagepath)
 		with open(apkpath, 'wb') as first:
 			print('Downloading ' + download['docId'] + '.apk.....')
 			for chunk in download.get('file').get('data'):
