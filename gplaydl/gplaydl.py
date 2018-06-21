@@ -124,4 +124,4 @@ def main():
 		except:
 			print('Download failed. gplaydl cannot download some apps that are paid or incompatible.')
 	else:
-		args.print_help()
+		ap.print_help()
