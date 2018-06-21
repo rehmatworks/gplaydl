@@ -6,15 +6,15 @@ Download APK files from Google Play Store to your PC directly.
 -h, --help            show this help message and exit
 -c, --configure       Create the configuration file by providing your Google
                      email and password (preferably app password).
--id PACKAGEID, --packageId PACKAGEID
+-id, --packageId
                      Package ID of the app, i.e. com.whatsapp
--e EMAIL, --email EMAIL
+-e, --email
                      Google username
--p PASSWORD, --password PASSWORD
+-p, --password
                      Google password
--d STORAGEPATH, --directory STORAGEPATH
+-d, --directory
                      Path where to store downloaded files
--dc DEVICECODE, --deviceCode DEVICECODE
+-dc, --deviceCode
                      Device code name
 -ex, --expansionfiles
                      Download expansion (OBB) data if available
