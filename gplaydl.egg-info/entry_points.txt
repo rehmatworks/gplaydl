@@ -1,0 +1,3 @@
+[console_scripts]
+gplaydl = gplaydl.gplaydl:main
+
