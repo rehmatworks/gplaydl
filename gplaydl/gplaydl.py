@@ -121,7 +121,7 @@ def main():
 						for chunk in obb.get('file').get('data'):
 							second.write(chunk)
 					print('OBB file downloaded and stored at ' + obbpath)
-				print('All done!')
+			print('All done!')
 		except:
 			print('Download failed. gplaydl cannot download some apps that are paid or incompatible.')
 	else:
