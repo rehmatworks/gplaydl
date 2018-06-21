@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: gplaydl
-Version: 1.0.1
+Version: 1.0.2
 Summary: Google Play APK downloader command line utility that utilizes gpapi to download APK files of free apps and games.
 Home-page: https://github.com/rehmatworks/gplaydl
 Author: Rehmat

@@ -110,7 +110,7 @@ def main():
 					first.write(chunk)
 			print('APK downloaded and stored at ' + apkpath)
 
-			if expansionfiles:
+			if expansionfiles and len(download['additionalData']) > 0:
 				for obb in download['additionalData']:
 					name = obb['type'] + '.' + str(obb['versionCode']) + '.' + download['docId'] + '.obb'
 					print('Downloading ' + name + '.....')
