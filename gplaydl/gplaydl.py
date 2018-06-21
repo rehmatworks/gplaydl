@@ -86,7 +86,7 @@ def main():
 			sys.exit(1)
 	server = GooglePlayAPI('en_US', 'America/New York', args.deviceCode)
 	try:
-		server = do_login(server, args.email, args.password)
+		server = do_login(server, email, password)
 	except:
 		print('Login failed. Ensure that correct credentials are provided.')
 		sys.exit(1)
