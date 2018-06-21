@@ -1,7 +1,7 @@
-# Command Line Utility to Download APK Files
+## Command Line Utility to Download APK Files
 Download APK files from Google Play Store to your PC directly. A command line implementation of [NoMore201/googleplay-api](https://github.com/NoMore201/googleplay-api/tree/master/gpapi)
 
-## Installation
+### Installation
 `pip3 install gplaydl`
 
 or
@@ -12,7 +12,7 @@ CD into `gplaydl` and then:
 
 `python3 setup.py install`
 
-## Usage:
+### Usage:
 ```bash
 -h, --help            show this help message and exit
 -c, --configure       Create the configuration file by providing your Google
