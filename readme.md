@@ -51,9 +51,9 @@ Store APK file in a custom directory:
 gplaydl -id com.whatsapp -d folder-name-or-path
 ```
 
-Download a game with expansion (OBB) files:
+Download a game with expansion (OBB) files (Does not make a difference if expansion files are not available for an app or a game):
 ```
-gplaydl -id com.rayark.Cytus.full
+gplaydl -id com.rayark.Cytus.full -ex
 ```
 
 Upload a specific device by code (Defaults to `bacon`) ([Available Devices](https://github.com/NoMore201/googleplay-api/blob/master/gpapi/device.properties)):
