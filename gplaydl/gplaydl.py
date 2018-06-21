@@ -99,30 +99,30 @@ def main():
 			print('Login failed. Ensure that correct credentials are provided.')
 			sys.exit(1)
 		
-		try:
-			download = server.download(args.packageId, expansion_files=args.expansionfiles)
-			apkpath = os.path.join(storagepath, download['docId'] + '.apk')
-			if not os.path.isdir(storagepath):
-				os.makedirs(storagepath)
-			with open(apkpath, 'wb') as first:
-				print('Downloading ' + download['docId'] + '.apk.....')
-				for chunk in download.get('file').get('data'):
-					first.write(chunk)
-			print('APK downloaded and stored at ' + apkpath)
+		# try:
+		download = server.download(args.packageId, expansion_files=args.expansionfiles)
+		apkpath = os.path.join(storagepath, download['docId'] + '.apk')
+		if not os.path.isdir(storagepath):
+			os.makedirs(storagepath)
+		with open(apkpath, 'wb') as first:
+			print('Downloading ' + download['docId'] + '.apk.....')
+			for chunk in download.get('file').get('data'):
+				first.write(chunk)
+		print('APK downloaded and stored at ' + apkpath)
 
-			if expansionfiles and len(download['additionalData']) > 0:
-				for obb in download['additionalData']:
-					name = obb['type'] + '.' + str(obb['versionCode']) + '.' + download['docId'] + '.obb'
-					print('Downloading ' + name + '.....')
-					obbpath = os.path.join(storagepath, download['docId'], name)
-					if not os.path.isdir(os.path.join(storagepath, download['docId'])):
-						os.makedirs(os.path.join(storagepath, download['docId']))
-					with open(obbpath, 'wb') as second:
-						for chunk in obb.get('file').get('data'):
-							second.write(chunk)
-					print('OBB file downloaded and stored at ' + obbpath)
-			print('All done!')
-		except:
-			print('Download failed. gplaydl cannot download some apps that are paid or incompatible.')
+		if expansionfiles and len(download['additionalData']) > 0:
+			for obb in download['additionalData']:
+				name = obb['type'] + '.' + str(obb['versionCode']) + '.' + download['docId'] + '.obb'
+				print('Downloading ' + name + '.....')
+				obbpath = os.path.join(storagepath, download['docId'], name)
+				if not os.path.isdir(os.path.join(storagepath, download['docId'])):
+					os.makedirs(os.path.join(storagepath, download['docId']))
+				with open(obbpath, 'wb') as second:
+					for chunk in obb.get('file').get('data'):
+						second.write(chunk)
+				print('OBB file downloaded and stored at ' + obbpath)
+		print('All done!')
+		# except:
+		print('Download failed. gplaydl cannot download some apps that are paid or incompatible.')
 	else:
 		ap.print_help()
