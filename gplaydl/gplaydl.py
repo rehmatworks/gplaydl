@@ -12,7 +12,7 @@ ap.add_argument('-c', '--configure', dest='configure', action='store_const', con
 ap.add_argument('-id', '--packageId', dest='packageId', help='Package ID of the app, i.e. com.whatsapp')
 ap.add_argument('-e', '--email', dest='email', help='Google username', default=None)
 ap.add_argument('-p', '--password', dest='password', help='Google password', default=None)
-ap.add_argument('-d', '--directory', dest='storagepath', help='Path where to store downloaded files', default='./')
+ap.add_argument('-d', '--directory', dest='storagepath', help='Path where to store downloaded files', default=False)
 ap.add_argument('-dc', '--deviceCode', dest='deviceCode', help='Device code name', default='bacon')
 ap.add_argument('-ex', '--expansionfiles', dest='expansionfiles', action='store_const', const=True, help='Download expansion (OBB) data if available', default=True)
 
@@ -63,6 +63,12 @@ def main():
 	else:
 		email = None
 		password = None
+
+	if args.storagepath:
+		storagepath = args.storagepath
+	else:
+		storagepath = './'
+
 	if args.configure:
 		if email is not None and password is not None:
 			if not os.path.exists(CONFIGDIR):
