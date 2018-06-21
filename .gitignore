@@ -8,3 +8,4 @@ parts
 gplaydl.egg-info
 lib
 lib64
+*.apk
