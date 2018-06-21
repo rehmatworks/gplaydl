@@ -98,7 +98,6 @@ def main():
 		sys.exit(1)
 	
 	try:
-		print(args.packageId)
 		download = server.download(args.packageId, expansion_files=args.expansionfiles)
 		apkpath = os.path.join(storagepath, download['docId'] + '.apk')
 		with open(apkpath, 'wb') as first:
