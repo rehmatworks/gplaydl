@@ -56,5 +56,14 @@ Download a game with expansion (OBB) files:
 gplaydl -id com.rayark.Cytus.full
 ```
 
+Upload a specific device by code (Defaults to `bacon`) ([Available Devices](https://github.com/NoMore201/googleplay-api/blob/master/gpapi/device.properties)):
+
+`gplaydl -id com.whatsapp -dc angler` 
+
+### Features:
+* No need to provide device ID (Generated automatically))
+* No need to provide auth token (Generated automatically)
+* Re-uses auth token and refreshes it if expired
+
 ### Credits:
 [NoMore201/googleplay-api](https://github.com/NoMore201/googleplay-api/tree/master/gpapi)
