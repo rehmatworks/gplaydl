@@ -48,5 +48,5 @@ Download a game with expansion (OBB) files:
 gplaydl -id com.rayark.Cytus.full
 ```
 
-Credits:
+### Credits:
 [NoMore201/googleplay-api](https://github.com/NoMore201/googleplay-api/tree/master/gpapi)
