@@ -6,7 +6,11 @@ Download APK files from Google Play Store to your PC directly.
 
 or
 
-`git clone https://github.com/rehmatworks/gplaydl.git && python3 setup.py install`
+`git clone https://github.com/rehmatworks/gplaydl.git`
+
+CD into `gplaydl` and then:
+
+`python3 setup.py install`
 
 ## Usage:
 ```bash
