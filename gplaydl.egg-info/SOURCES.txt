@@ -1,0 +1,10 @@
+setup.py
+gplaydl/__init__.py
+gplaydl/__main__.py
+gplaydl/gplaydl.py
+gplaydl.egg-info/PKG-INFO
+gplaydl.egg-info/SOURCES.txt
+gplaydl.egg-info/dependency_links.txt
+gplaydl.egg-info/entry_points.txt
+gplaydl.egg-info/requires.txt
+gplaydl.egg-info/top_level.txt
