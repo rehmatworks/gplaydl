@@ -14,7 +14,7 @@ ap.add_argument('-e', '--email', dest='email', help='Google username', default=N
 ap.add_argument('-p', '--password', dest='password', help='Google password', default=None)
 ap.add_argument('-d', '--directory', dest='storagepath', help='Path where to store downloaded files', default=False)
 ap.add_argument('-dc', '--deviceCode', dest='deviceCode', help='Device code name', default='bacon')
-ap.add_argument('-ex', '--expansionfiles', dest='expansionfiles', action='store_const', const=True, help='Download expansion (OBB) data if available', default=True)
+ap.add_argument('-ex', '--expansionfiles', dest='expansionfiles', action='store_const', const=True, help='Download expansion (OBB) data if available', default=False)
 
 args = ap.parse_args()
 
@@ -110,17 +110,18 @@ def main():
 					first.write(chunk)
 			print('APK downloaded and stored at ' + apkpath)
 
-			for obb in download['additionalData']:
-				name = obb['type'] + '.' + str(obb['versionCode']) + '.' + download['docId'] + '.obb'
-				print('Downloading ' + name + '.....')
-				obbpath = os.path.join(storagepath, download['docId'], name)
-				if not os.path.isdir(os.path.join(storagepath, download['docId'])):
-					os.makedirs(os.path.join(storagepath, download['docId']))
-				with open(obbpath, 'wb') as second:
-					for chunk in obb.get('file').get('data'):
-						second.write(chunk)
-				print('OBB file downloaded and stored at ' + obbpath)
-			print('All done!')
+			if expansionfiles:
+				for obb in download['additionalData']:
+					name = obb['type'] + '.' + str(obb['versionCode']) + '.' + download['docId'] + '.obb'
+					print('Downloading ' + name + '.....')
+					obbpath = os.path.join(storagepath, download['docId'], name)
+					if not os.path.isdir(os.path.join(storagepath, download['docId'])):
+						os.makedirs(os.path.join(storagepath, download['docId']))
+					with open(obbpath, 'wb') as second:
+						for chunk in obb.get('file').get('data'):
+							second.write(chunk)
+					print('OBB file downloaded and stored at ' + obbpath)
+				print('All done!')
 		except:
 			print('Download failed. gplaydl cannot download some apps that are paid or incompatible.')
 	else:
