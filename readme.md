@@ -71,4 +71,4 @@ gplaydl -id com.whatsapp -dc angler
 * Re-uses auth token and refreshes it if expired
 
 ### Credits:
-[NoMore201/googleplay-api](https://github.com/NoMore201/googleplay-api/tree/master/gpapi)
+[NoMore201/googleplay-api](https://github.com/NoMore201/googleplay-api/)
