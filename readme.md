@@ -2,7 +2,7 @@
 Download APK files from Google Play Store to your PC directly. A command line implementation of [NoMore201/googleplay-api](https://github.com/NoMore201/googleplay-api/)
 
 ## Web-based APK Downloader
-I've launched an awesome <a href="https://apktools.io/online-apk-downloader/">web-based APK downloader here</a> that you can use to download APK files to your PC directly from Google Play Store. It supports split APKs as well and the download links from Google servers are directly served to you.
+I've launched an awesome <a href="https://apkbucket.net/apk-downloader/">web-based APK downloader here</a> that you can use to download APK files to your PC directly from Google Play Store. It supports split APKs as well and the download links from Google servers are directly served to you.
 
 ### Installation
 `pip3 install gplaydl`
