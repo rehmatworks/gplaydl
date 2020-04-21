@@ -30,9 +30,9 @@ dl.add_argument("--packageId", required=True, dest="packageId",
                 help="Package ID of the app, i.e. com.whatsapp")
 dl.add_argument("--path", dest="storagepath",
                 help="Path where to store downloaded files", default=False)
-dl.add_argument("--ex", dest="expansionfiles", action="store_const",
+dl.add_argument("--ex", dest="expansionfiles",
                 help="Download expansion (OBB) data if available", default=True)
-dl.add_argument("--splits", dest="splits", action="store_const",
+dl.add_argument("--splits", dest="splits",
                 help="Download split APKs if available", default=True)
 
 args = ap.parse_args()
