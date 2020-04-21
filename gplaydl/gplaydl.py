@@ -88,8 +88,8 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
     if os.path.exists(CONFIGFILE):
         with open(CONFIGFILE, "rb") as f:
             config = pickle.load(f)
-            email = config["email"]
-            password = config["password"]
+            email = config.get("email")
+            password = config.get("password")
     else:
         print(
             colored("Login credentials not found. Please configure them first.", "yellow"))
@@ -106,7 +106,7 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
     try:
         print(colored("Attempting to download %s" % packageId, "blue"))
         download = server.download(packageId, expansion_files=expansionFiles)
-        apkfname = "%s.apk" % download["docId"]
+        apkfname = "%s.apk" % download.get("docId")
         apkpath = os.path.join(storagepath, apkfname)
 
         if not os.path.isdir(storagepath):
@@ -124,12 +124,12 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
         print("")
         print(colored("APK downloaded and stored at %s" % apkpath, "green"))
         
-        for split in download["splits"]:
-            name = "%s.apk" % (splits["name"])
+        for split in download.get("splits"):
+            name = "%s.apk" % (split.get("name"))
             print(colored("Downloading %s....." % name, "blue"))
-            splitpath = os.path.join(storagepath, download["docId"], name)
-            if not os.path.isdir(os.path.join(storagepath, download["docId"])):
-                os.makedirs(os.path.join(storagepath, download["docId"]), exist_ok=True)
+            splitpath = os.path.join(storagepath, download.get("docId"), name)
+            if not os.path.isdir(os.path.join(storagepath, download.get("docId"))):
+                os.makedirs(os.path.join(storagepath, download.get("docId")), exist_ok=True)
 
             saved = 0
             totalsize = int(split.get("file").get("total_size"))
@@ -143,13 +143,13 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
             print("")
             print(colored("Split APK downloaded and stored at %s" % splitpath, "green"))
 
-        for obb in download["additionalData"]:
-            name = "%s.%s.%s.obb" % (obb["type"], str(
-                obb["versionCode"]), download["docId"])
+        for obb in download.get("additionalData"):
+            name = "%s.%s.%s.obb" % (obb.get("type"), str(
+                obb.get("versionCode")), download.get("docId"))
             print(colored("Downloading %s....." % name, "blue"))
-            obbpath = os.path.join(storagepath, download["docId"], name)
-            if not os.path.isdir(os.path.join(storagepath, download["docId"])):
-                os.makedirs(os.path.join(storagepath, download["docId"]), exist_ok=True)
+            obbpath = os.path.join(storagepath, download.get("docId"), name)
+            if not os.path.isdir(os.path.join(storagepath, download.get("docId"))):
+                os.makedirs(os.path.join(storagepath, download.get("docId")), exist_ok=True)
 
             saved = 0
             totalsize = int(obb.get("file").get("total_size"))
