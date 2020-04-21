@@ -16,7 +16,13 @@ python3 setup.py install
 **Attention:** Only Python 3.2.x and up is supported. Please use PIP3, not PIP (if PIP is aliased to Python 2.x PIP)
 
 ## Configuration
-Soon after the package is installed, type `gplaydl configure` and hit enter. You will be asked to provide the login info. Provided the following details:
+Soon after the package is installed, type the following and hit enter:
+
+```bash
+gplaydl configure
+```
+
+You will be asked to provide the login info. Provided the following details:
 
 * Email: Your Google account's email address
 * Password: Your Google account's password (An app password is recommended)
