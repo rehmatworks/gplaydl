@@ -66,14 +66,14 @@ gplaydl download --packageId com.twitter.android --device angler
 Since version 1.2.0, expansion files are downloaded as well if available. If you don't want to download those files, set the flag to `n`:
 
 ```bash
-gplaydl download --packageid com.rayark.Cytus.full --ex n
+gplaydl download --packageId com.rayark.Cytus.full --ex n
 ```
 
 ### Split APKs:
 Since version 1.3.0, split APK files are downloaded as well if available. If you don't want to download split APKs, set the flag to `n`:
 
 ```bash
-gplaydl download --packageid com.twitter.android --splits n
+gplaydl download --packageId com.twitter.android --splits n
 ```
 
 ### Change Google Account:
