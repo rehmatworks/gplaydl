@@ -17,6 +17,6 @@ setup(name='gplaydl',
 		'gplaydl'
 	],
 	install_requires=[
-		'gpapi'
+		'gpapidl'
 	]
 )

@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from gpapi.googleplay import GooglePlayAPI
+from gpapidl.googleplay import GooglePlayAPI
 import os
 import sys
 import argparse
@@ -109,15 +109,34 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
         saved = 0
         totalsize = int(download.get("file").get("total_size"))
         print(colored("Downloading %s....." % apkfname, "blue"))
-        with open(apkpath, "wb") as first:
+        with open(apkpath, "wb") as apkf:
             for chunk in download.get("file").get("data"):
                 saved += len(chunk)
-                first.write(chunk)
+                apkf.write(chunk)
                 done = int(50 * saved / totalsize)
                 sys.stdout.write("\r[%s%s] %s%s (%s/%s)" % ("*" * done, " " * (50-done), int(
                     (saved/totalsize)*100), "%", sizeof_fmt(saved), sizeof_fmt(totalsize)))
         print("")
         print(colored("APK downloaded and stored at %s" % apkpath, "green"))
+        
+        for split in download["splits"]:
+            name = "%s.apk" % (splits["name"])
+            print(colored("Downloading %s....." % name, "blue"))
+            splitpath = os.path.join(storagepath, download["docId"], name)
+            if not os.path.isdir(os.path.join(storagepath, download["docId"])):
+                os.makedirs(os.path.join(storagepath, download["docId"]), exist_ok=True)
+
+            saved = 0
+            totalsize = int(split.get("file").get("total_size"))
+            with open(splitpath, "wb") as splitf:
+                for chunk in obb.get("file").get("data"):
+                    splitf.write(chunk)
+                    saved += len(chunk)
+                    done = int(50 * saved / totalsize)
+                    sys.stdout.write("\r[%s%s] %s%s (%s/%s)" % ("*" * done, " " * (50-done), int(
+                        (saved/totalsize)*100), "%", sizeof_fmt(saved), sizeof_fmt(totalsize)))
+            print("")
+            print(colored("Split APK downloaded and stored at %s" % splitpath, "green"))
 
         for obb in download["additionalData"]:
             name = "%s.%s.%s.obb" % (obb["type"], str(
@@ -129,9 +148,9 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
 
             saved = 0
             totalsize = int(obb.get("file").get("total_size"))
-            with open(obbpath, "wb") as second:
+            with open(obbpath, "wb") as obbf:
                 for chunk in obb.get("file").get("data"):
-                    second.write(chunk)
+                    obbf.write(chunk)
                     saved += len(chunk)
                     done = int(50 * saved / totalsize)
                     sys.stdout.write("\r[%s%s] %s%s (%s/%s)" % ("*" * done, " " * (50-done), int(
