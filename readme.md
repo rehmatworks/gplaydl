@@ -98,4 +98,6 @@ gplaydl configure
 Aren't comfortable using CLI tools? Use my <a href="https://apkbucket.net/apk-downloader/">web-based APK downloader here</a>.
 
 ### Credits:
-[NoMore201/googleplay-api](https://github.com/NoMore201/googleplay-api/)
+`gplaydl` makes use of the following packages:
+
+* [NoMore201/googleplay-api](https://github.com/NoMore201/googleplay-api/)
