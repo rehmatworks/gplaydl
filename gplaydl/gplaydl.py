@@ -35,7 +35,7 @@ dl.add_argument("--ex", dest="expansionfiles", action="store_const", const=True,
 
 args = ap.parse_args()
 
-if (args.action == 'download' or args.action == 'configure') and args.devicecode:
+if (args.action == 'download' or args.action == 'configure') and args.device:
     devicecode = args.device
 
 HOMEDIR = expanduser("~/.gplaydl")
