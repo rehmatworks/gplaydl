@@ -1,5 +1,5 @@
 # Command Line APK Downloader
-Download APK & expansion (OBB) files from Google Play Store to your personal computer or server directly with minimum effort.
+Download APK, split APKs, and expansion (OBB) files from Google Play Store to your personal computer or server directly with minimum effort.
 
 ## Brief Instructions
 ```bash
