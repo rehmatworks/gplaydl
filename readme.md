@@ -10,7 +10,7 @@ pip3 install gplaydl
 gplaydl configure
 
 # Let's try downloading an app
-gplay download --packageId com.whatsapp
+gplaydl download --packageId com.whatsapp
 ```
 
 ## Detailed Instructions
