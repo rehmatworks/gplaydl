@@ -24,7 +24,7 @@ cp.add_argument("--device", dest="device",
 # Args for downloading an app
 dl = subparsers.add_parser(
     "download", help="Download an app or a game from Google Play.")
-d.add_argument("--device", dest="device",
+dl.add_argument("--device", dest="device",
              help="Device code name", default=devicecode)
 dl.add_argument("--packageId", required=True, dest="packageId",
                 help="Package ID of the app, i.e. com.whatsapp")
