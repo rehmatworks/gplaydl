@@ -90,7 +90,7 @@ gplaydl configure
 * Full support for OBB aka. expansion files (since v.1.3.0)
 * Supports download of (your purchased) paid apps (since v.1.3.0)
 * Shows download progress (since v.1.2.0)
-* No need to provide device ID (Generated automatically))
+* No need to provide device ID (Generated automatically)
 * No need to provide auth token (Generated automatically)
 * Re-uses auth token and refreshes it if expired
 
