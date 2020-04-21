@@ -13,7 +13,7 @@ git clone https://github.com/rehmatworks/gplaydl.git && \
 cd gplaydl && \
 python3 setup.py install
 ```
-**Attention:** Only Python 3.2.x and up is supported. Please use PIP3, not PIP (if PIP is aliast to Python 2.x PIP)
+**Attention:** Only Python 3.2.x and up is supported. Please use PIP3, not PIP (if PIP is aliased to Python 2.x PIP)
 
 ## Configuration
 Soon after the package is installed, type `gplaydl configure` and hit enter. You will be asked to provide the login info. Provided the following details:
