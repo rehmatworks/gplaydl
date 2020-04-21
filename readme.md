@@ -42,13 +42,13 @@ You will be asked to provide the login info. Provided the following details:
 * Password: Your Google account's password (An app password is recommended)
 
 ## Downloading Apps
-Download WhatsApp using the default device (shamu) and store the APK in the current directory:
+Download WhatsApp using the default device **Nexus 6 (api27) [shamu]** and store the APK in the current directory:
 
 ```bash
 gplaydl download --packageId com.whatsapp
 ```
 
-Download WhatsApp using the default device (shamu) and store the APK in a custom path (i.e. ./apk-downloads/):
+Download WhatsApp using the default device **Nexus 6 (api27) [shamu]** and store the APK in a custom path (i.e. ./apk-downloads/):
 
 ```bash
 gplaydl download --packageId com.whatsapp --path ./apk-downloads/
@@ -61,10 +61,17 @@ gplaydl download --packageId com.whatsapp --device angler
 ```
 
 ### Expansion Files:
-Since version 1.2.0, expansion files are downloaded as well if they are available. If you don't want to download expansion files, set the flag to false:
+Since version 1.2.0, expansion files are downloaded as well if they are available. If you don't want to download expansion files, set the flag to `n`:
 
 ```bash
-gplaydl download --packageid com.rayark.Cytus.full --ex False
+gplaydl download --packageid com.rayark.Cytus.full --ex n
+```
+
+### Split APKs:
+Since version 1.2.0, split APK files are downloaded as well if they are available. If you don't want to download split APKs, set the flag to `n`:
+
+```bash
+gplaydl download --packageid com.twitter.android --splits n
 ```
 
 ### Change Google Account:
