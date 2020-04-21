@@ -31,9 +31,9 @@ dl.add_argument("--packageId", required=True, dest="packageId",
 dl.add_argument("--path", dest="storagepath",
                 help="Path where to store downloaded files", default=False)
 dl.add_argument("--ex", dest="expansionfiles",
-                help="Download expansion (OBB) data if available", default=True)
+                help="Download expansion (OBB) data if available", default='y')
 dl.add_argument("--splits", dest="splits",
-                help="Download split APKs if available", default=True)
+                help="Download split APKs if available", default='y')
 
 args = ap.parse_args()
 
@@ -86,7 +86,11 @@ def configureauth():
         configureauth()
 
 
-def downloadapp(packageId, expansionFiles=True, storagepath="./"):
+def downloadapp(packageId):
+    if args.storagepath:
+        storagepath = args.storagepath
+    else:
+        storagepath = "./"
     if os.path.exists(CONFIGFILE):
         with open(CONFIGFILE, "rb") as f:
             config = pickle.load(f)
@@ -107,6 +111,7 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
 
     try:
         print(colored("Attempting to download %s" % packageId, "blue"))
+        expansionFiles = True if args.expansionfiles == 'y' else False
         download = server.download(packageId, expansion_files=expansionFiles)
         apkfname = "%s.apk" % download.get("docId")
         apkpath = os.path.join(storagepath, apkfname)
@@ -126,7 +131,7 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
         print("")
         print(colored("APK downloaded and stored at %s" % apkpath, "green"))
 
-        if args.splits == True:
+        if args.splits == 'y':
             for split in download.get("splits"):
                 name = "%s.apk" % (split.get("name"))
                 print(colored("Downloading %s....." % name, "blue"))
@@ -221,12 +226,7 @@ def main():
 
     if args.action == "download":
         if args.packageId:
-            if args.storagepath:
-                storagepath = args.storagepath
-            else:
-                storagepath = "./"
-            downloadapp(packageId=args.packageId,
-                        expansionFiles=args.expansionfiles, storagepath=storagepath)
+            downloadapp(packageId=args.packageId)
         sys.exit(0)
 
 
