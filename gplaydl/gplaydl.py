@@ -20,14 +20,11 @@ subparsers = ap.add_subparsers(dest="action")
 
 # Args for configuring Google auth
 cp = subparsers.add_parser("configure", help="Configure Google login info.")
-cp.add_argument("--email", dest="email", help="Google email address.")
-cp.add_argument("--password", dest="password",
-                help="Google password", default=None)
 
 # Args for downloading an app
 dl = subparsers.add_parser(
     "download", help="Download an app or a game from Google Play.")
-dl.add_argument("--packageId", dest="packageId",
+dl.add_argument("--packageId", required=True, dest="packageId",
                 help="Package ID of the app, i.e. com.whatsapp")
 dl.add_argument("--path", dest="storagepath",
                 help="Path where to store downloaded files", default=False)
@@ -67,7 +64,7 @@ def configureauth():
             password = None
 
     if not os.path.exists(CONFIGDIR):
-        os.makedirs(os.path.dirname(CONFIGDIR), exist_ok=True)
+        os.makedirs(CONFIGDIR, exist_ok=True)
 
     server = GooglePlayAPI("en_US", "America/New York", devicecode)
     try:
@@ -77,8 +74,8 @@ def configureauth():
         pickle.dump(config, open(CONFIGFILE, "wb"))
         print(colored(
             "Configuration file created successfully! Try downloading an app now.", "green"))
-    except:
-        print(colored("Provided login credentials seem to be invalid.", "yellow"))
+    except Exception as e:
+        print(colored(str(e), "yellow"))
         configureauth()
 
 
@@ -148,7 +145,7 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
 
 def write_cache(gsfId, token):
     if not os.path.exists(CACHEDIR):
-        os.makedirs(os.path.dirname(CACHEDIR), exist_ok=True)
+        os.makedirs(CACHEDIR, exist_ok=True)
     info = {"gsfId": gsfId, "token": token}
     pickle.dump(info, open(CACHEFILE, "wb"))
 
@@ -183,22 +180,22 @@ def do_login(server, email, password):
 
 
 def main():
-    if args.action == "configure":
-        configureauth()
-        sys.exit(0)
+	if sys.version_info < (3, 2):
+		print(colored('Only Python 3.2.x & up is supported. Please uninstall gplaydl and re-install under Python 3.2.x or up.', 'yellow'))
+		sys.exit(1)
 
-    if args.action == "download":
-        if args.packageId:
-            if args.storagepath:
-                storagepath = args.storagepath
-            else:
-                storagepath = "./"
-            downloadapp(packageId=args.packageId,
-                        expansionFiles=args.expansionfiles, storagepath=storagepath)
-		else:
-			print(colored("Provide a package ID (--packageId) to download an app or a game.", "yellow"))
-        sys.exit(0)
-        
+	if args.action == "configure":
+		configureauth()
+		sys.exit(0)
+		
+	if args.action == "download":
+		if args.packageId:
+			if args.storagepath:
+				storagepath = args.storagepath
+			else:
+				storagepath = "./"
+			downloadapp(packageId=args.packageId, expansionFiles=args.expansionfiles, storagepath=storagepath)
+		sys.exit(0)
 
 
 if args.action not in ["download", "configure"]:
