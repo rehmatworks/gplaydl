@@ -1,7 +1,21 @@
 # Command Line APK Downloader
 Download APK & expansion (OBB) files from Google Play Store to your PC or server directly. A command line implementation of [NoMore201/googleplay-api](https://github.com/NoMore201/googleplay-api/).
 
-## Installation
+## Brief Instructions
+```bash
+# Install the package
+pip3 install gplaydl
+
+# Configure auth
+gplaydl configure
+
+# Let's try downloading an app
+gplay download --packageId com.whatsapp
+```
+
+## Detailed Instructions
+So the brief instructions didn't get you going? Here is a detailed guide for you. Let's beging with installing the package using PIP3.
+
 ```bash
 pip3 install gplaydl
 ```
