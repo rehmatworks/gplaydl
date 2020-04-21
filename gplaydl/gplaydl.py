@@ -73,7 +73,6 @@ def downloadapp(packageId, email=None, password=None, expansionFiles=True, stora
 				email = config['email']
 				password = config['password']
 		else:
-			print(colored('Login credentials not found. You will be guided to configure the auth info now.', 'yellow'))
 			configureauth()
 
 		server = GooglePlayAPI('en_US', 'America/New York', args.deviceCode)
