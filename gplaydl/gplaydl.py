@@ -30,9 +30,9 @@ dl.add_argument("--packageId", required=True, dest="packageId",
                 help="Package ID of the app, i.e. com.whatsapp")
 dl.add_argument("--path", dest="storagepath",
                 help="Path where to store downloaded files", default=False)
-dl.add_argument("--ex", dest="expansionfiles", action="store_const", const=True,
+dl.add_argument("--ex", dest="expansionfiles", action="store_const",
                 help="Download expansion (OBB) data if available", default=True)
-dl.add_argument("--splits", dest="splits", action="store_const", const=True,
+dl.add_argument("--splits", dest="splits", action="store_const",
                 help="Download split APKs if available", default=True)
 
 args = ap.parse_args()
@@ -130,7 +130,8 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
             for split in download.get("splits"):
                 name = "%s.apk" % (split.get("name"))
                 print(colored("Downloading %s....." % name, "blue"))
-                splitpath = os.path.join(storagepath, download.get("docId"), name)
+                splitpath = os.path.join(
+                    storagepath, download.get("docId"), name)
                 if not os.path.isdir(os.path.join(storagepath, download.get("docId"))):
                     os.makedirs(os.path.join(
                         storagepath, download.get("docId")), exist_ok=True)
@@ -146,7 +147,7 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
                             (saved/totalsize)*100), "%", sizeof_fmt(saved), sizeof_fmt(totalsize)))
                 print("")
                 print(colored("Split APK downloaded and stored at %s" %
-                            splitpath, "green"))
+                              splitpath, "green"))
 
         for obb in download.get("additionalData"):
             name = "%s.%s.%s.obb" % (obb.get("type"), str(
