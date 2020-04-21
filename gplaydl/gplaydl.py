@@ -72,6 +72,7 @@ def downloadapp(packageId, email=None, password=None, expansionFiles=True, stora
 			email = config['email']
 			password = config['password']
 	else:
+		print(colored('Login credentials not found. Please configure them first.', 'yellow'))
 		configureauth()
 		sys.exit(0)
 
