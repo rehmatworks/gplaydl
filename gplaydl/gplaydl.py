@@ -10,20 +10,22 @@ import validators
 from termcolor import colored
 from getpass import getpass
 
-devicecode = "bacon"
+devicecode = "shamu"
 
 ap = argparse.ArgumentParser(
     description="Command line APK downloader for Google Play Store.")
-ap.add_argument("--device", dest="device",
-                help="Device code name", default=devicecode)
 subparsers = ap.add_subparsers(dest="action")
 
 # Args for configuring Google auth
 cp = subparsers.add_parser("configure", help="Configure Google login info.")
+cp.add_argument("--device", dest="device",
+              help="Device code name", default=devicecode)
 
 # Args for downloading an app
 dl = subparsers.add_parser(
     "download", help="Download an app or a game from Google Play.")
+d.add_argument("--device", dest="device",
+             help="Device code name", default=devicecode)
 dl.add_argument("--packageId", required=True, dest="packageId",
                 help="Package ID of the app, i.e. com.whatsapp")
 dl.add_argument("--path", dest="storagepath",
@@ -33,9 +35,12 @@ dl.add_argument("--ex", dest="expansionfiles", action="store_const", const=True,
 
 args = ap.parse_args()
 
+if (args.action == 'download' or args.action == 'configure') and args.devicecode:
+    devicecode = args.device
+
 HOMEDIR = expanduser("~/.gplaydl")
 CACHEDIR = os.path.join(HOMEDIR, "cache")
-CACHEFILE = os.path.join(CACHEDIR, "%s.txt" % args.device)
+CACHEFILE = os.path.join(CACHEDIR, "%s.txt" % devicecode)
 CONFIGDIR = os.path.join(HOMEDIR, "config")
 CONFIGFILE = os.path.join(CONFIGDIR, "config.txt")
 

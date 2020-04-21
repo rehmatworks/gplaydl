@@ -42,13 +42,13 @@ You will be asked to provide the login info. Provided the following details:
 * Password: Your Google account's password (An app password is recommended)
 
 ## Downloading Apps
-Download WhatsApp using the default device (bacon) and store the APK in the current directory:
+Download WhatsApp using the default device (shamu) and store the APK in the current directory:
 
 ```bash
 gplaydl download --packageId com.whatsapp
 ```
 
-Download WhatsApp using the default device (bacon) and store the APK in a custom path (i.e. ./apk-downloads/):
+Download WhatsApp using the default device (shamu) and store the APK in a custom path (i.e. ./apk-downloads/):
 
 ```bash
 gplaydl download --packageId com.whatsapp --path ./apk-downloads/
