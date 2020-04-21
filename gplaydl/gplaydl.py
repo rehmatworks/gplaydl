@@ -19,19 +19,21 @@ subparsers = ap.add_subparsers(dest="action")
 # Args for configuring Google auth
 cp = subparsers.add_parser("configure", help="Configure Google login info.")
 cp.add_argument("--device", dest="device",
-              help="Device code name", default=devicecode)
+                help="Device code name", default=devicecode)
 
 # Args for downloading an app
 dl = subparsers.add_parser(
     "download", help="Download an app or a game from Google Play.")
 dl.add_argument("--device", dest="device",
-             help="Device code name", default=devicecode)
+                help="Device code name", default=devicecode)
 dl.add_argument("--packageId", required=True, dest="packageId",
                 help="Package ID of the app, i.e. com.whatsapp")
 dl.add_argument("--path", dest="storagepath",
                 help="Path where to store downloaded files", default=False)
 dl.add_argument("--ex", dest="expansionfiles", action="store_const", const=True,
                 help="Download expansion (OBB) data if available", default=True)
+dl.add_argument("--splits", dest="splits", action="store_const", const=True,
+                help="Download split APKs if available", default=True)
 
 args = ap.parse_args()
 
@@ -123,25 +125,28 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
                     (saved/totalsize)*100), "%", sizeof_fmt(saved), sizeof_fmt(totalsize)))
         print("")
         print(colored("APK downloaded and stored at %s" % apkpath, "green"))
-        
-        for split in download.get("splits"):
-            name = "%s.apk" % (split.get("name"))
-            print(colored("Downloading %s....." % name, "blue"))
-            splitpath = os.path.join(storagepath, download.get("docId"), name)
-            if not os.path.isdir(os.path.join(storagepath, download.get("docId"))):
-                os.makedirs(os.path.join(storagepath, download.get("docId")), exist_ok=True)
 
-            saved = 0
-            totalsize = int(split.get("file").get("total_size"))
-            with open(splitpath, "wb") as splitf:
-                for chunk in split.get("file").get("data"):
-                    splitf.write(chunk)
-                    saved += len(chunk)
-                    done = int(50 * saved / totalsize)
-                    sys.stdout.write("\r[%s%s] %s%s (%s/%s)" % ("*" * done, " " * (50-done), int(
-                        (saved/totalsize)*100), "%", sizeof_fmt(saved), sizeof_fmt(totalsize)))
-            print("")
-            print(colored("Split APK downloaded and stored at %s" % splitpath, "green"))
+        if args.splits == True:
+            for split in download.get("splits"):
+                name = "%s.apk" % (split.get("name"))
+                print(colored("Downloading %s....." % name, "blue"))
+                splitpath = os.path.join(storagepath, download.get("docId"), name)
+                if not os.path.isdir(os.path.join(storagepath, download.get("docId"))):
+                    os.makedirs(os.path.join(
+                        storagepath, download.get("docId")), exist_ok=True)
+
+                saved = 0
+                totalsize = int(split.get("file").get("total_size"))
+                with open(splitpath, "wb") as splitf:
+                    for chunk in split.get("file").get("data"):
+                        splitf.write(chunk)
+                        saved += len(chunk)
+                        done = int(50 * saved / totalsize)
+                        sys.stdout.write("\r[%s%s] %s%s (%s/%s)" % ("*" * done, " " * (50-done), int(
+                            (saved/totalsize)*100), "%", sizeof_fmt(saved), sizeof_fmt(totalsize)))
+                print("")
+                print(colored("Split APK downloaded and stored at %s" %
+                            splitpath, "green"))
 
         for obb in download.get("additionalData"):
             name = "%s.%s.%s.obb" % (obb.get("type"), str(
@@ -149,7 +154,8 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
             print(colored("Downloading %s....." % name, "blue"))
             obbpath = os.path.join(storagepath, download.get("docId"), name)
             if not os.path.isdir(os.path.join(storagepath, download.get("docId"))):
-                os.makedirs(os.path.join(storagepath, download.get("docId")), exist_ok=True)
+                os.makedirs(os.path.join(
+                    storagepath, download.get("docId")), exist_ok=True)
 
             saved = 0
             totalsize = int(obb.get("file").get("total_size"))
@@ -204,22 +210,23 @@ def do_login(server, email, password):
 
 
 def main():
-	if sys.version_info < (3, 2):
-		print(colored('Only Python 3.2.x & up is supported. Please uninstall gplaydl and re-install under Python 3.2.x or up.', 'yellow'))
-		sys.exit(1)
+    if sys.version_info < (3, 2):
+        print(colored('Only Python 3.2.x & up is supported. Please uninstall gplaydl and re-install under Python 3.2.x or up.', 'yellow'))
+        sys.exit(1)
 
-	if args.action == "configure":
-		configureauth()
-		sys.exit(0)
-		
-	if args.action == "download":
-		if args.packageId:
-			if args.storagepath:
-				storagepath = args.storagepath
-			else:
-				storagepath = "./"
-			downloadapp(packageId=args.packageId, expansionFiles=args.expansionfiles, storagepath=storagepath)
-		sys.exit(0)
+    if args.action == "configure":
+        configureauth()
+        sys.exit(0)
+
+    if args.action == "download":
+        if args.packageId:
+            if args.storagepath:
+                storagepath = args.storagepath
+            else:
+                storagepath = "./"
+            downloadapp(packageId=args.packageId,
+                        expansionFiles=args.expansionfiles, storagepath=storagepath)
+        sys.exit(0)
 
 
 if args.action not in ["download", "configure"]:
