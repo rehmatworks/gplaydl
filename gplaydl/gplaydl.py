@@ -75,8 +75,6 @@ def downloadapp(packageId, email=None, password=None, expansionFiles=True, stora
 		else:
 			print(colored('Login credentials not found. You will be guided to configure the auth info now.', 'yellow'))
 			configureauth()
-			downloadapp(packageId=packageId, email=email, password=password,
-			            expansionFiles=expansionFiles, storagepath=storagepath)
 
 		server = GooglePlayAPI('en_US', 'America/New York', args.deviceCode)
 		try:
