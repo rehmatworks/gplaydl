@@ -44,19 +44,19 @@ You will be asked to provide the login info. Provided the following details:
 * Password: Your Google account's password (An app password is recommended)
 
 ## Downloading Apps
-Download WhatsApp using the default device **Nexus 6 (api27) [shamu]** and store the APK in the current directory:
+Download Twitter using the default device **Nexus 6 (api27) [shamu]** and store the APK in the current directory:
 
 ```bash
 gplaydl download --packageId com.twitter.android
 ```
 
-Download WhatsApp using the default device **Nexus 6 (api27) [shamu]** and store the APK in a custom path (i.e. ./apk-downloads/):
+Download Twitter using the default device **Nexus 6 (api27) [shamu]** and store the APK in a custom path (i.e. ./apk-downloads/):
 
 ```bash
 gplaydl download --packageId com.twitter.android --path ./apk-downloads/
 ```
 
-Download WhatsApp using another device, i.e. `angler` ([Available Devices](https://github.com/NoMore201/googleplay-api/blob/master/gpapi/device.properties))
+Download Twitter using another device, i.e. `angler` ([Available Devices](https://github.com/NoMore201/googleplay-api/blob/master/gpapi/device.properties))
 
 ```bash
 gplaydl download --packageId com.twitter.android --device angler
