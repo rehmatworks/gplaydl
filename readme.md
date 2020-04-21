@@ -61,7 +61,7 @@ gplaydl download --packageId com.whatsapp --device angler
 ```
 
 ### Expansion Files:
-Since version 1.2.0, expansion files are downloaded as well if available. If you don't want to download expansion files, set the flag to `n`:
+Since version 1.2.0, expansion files are downloaded as well if available. If you don't want to download those files, set the flag to `n`:
 
 ```bash
 gplaydl download --packageid com.rayark.Cytus.full --ex n
