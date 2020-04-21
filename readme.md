@@ -1,4 +1,4 @@
-# Command Line Utility to Download APK Files
+# Command Line APK Downloader
 Download APK & expansion (OBB) files from Google Play Store to your PC or server directly. A command line implementation of [NoMore201/googleplay-api](https://github.com/NoMore201/googleplay-api/)
 
 ## Installation
