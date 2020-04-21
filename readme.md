@@ -1,9 +1,6 @@
 ## Command Line Utility to Download APK Files
 Download APK files from Google Play Store to your PC directly. A command line implementation of [NoMore201/googleplay-api](https://github.com/NoMore201/googleplay-api/)
 
-## Web-based APK Downloader
-I've launched an awesome <a href="https://apkbucket.net/apk-downloader/">web-based APK downloader here</a> that you can use to download APK files to your PC directly from Google Play Store. It supports split APKs as well and the download links from Google servers are directly served to you.
-
 ### Installation
 `pip3 install gplaydl`
 
@@ -15,57 +12,54 @@ CD into `gplaydl` and then:
 
 `python3 setup.py install`
 
-### Usage:
+**Attention:** Only Python 3.2.x and up is supported. Please use PIP3, not PIP (if PIP is aliast to Python 2.x PIP)
+
+### Configuration:
+Soon after the package is installed, type `gplaydl configure` and hit enter. You will be asked to provide the login info. Provided the following details:
+
+* Email: Your Google account's email address
+* Password: Your Google account's password (An app password is recommended)
+
+### Downloading Apps
+Download WhatsApp using the default device (bacon) and store the APK in the current directory:
+
 ```bash
--h, --help            show this help message and exit
--c, --configure       Create the configuration file by providing your Google
-                     email and password (preferably app password).
--id, --packageId
-                     Package ID of the app, i.e. com.whatsapp
--e, --email
-                     Google username
--p, --password
-                     Google password
--d, --directory
-                     Path where to store downloaded files
--dc, --deviceCode
-                     Device code name
--ex, --expansionfiles
-                     Download expansion (OBB) data if available
+gplaydl download --packageId com.whatsapp
 ```
 
-### Examples
-Save your email and password in config cache:
-```
-gplaydl --configure -e email@gmail.com -p passwordOrAppPassword
-```
-Download an APK file (i.e. WhatsApp):
-```
-gplaydl -id com.whatsapp
+Download WhatsApp using the default device (bacon) and store the APK in a custom path (i.e. ./apk-downloads/):
+
+```bash
+gplaydl download --packageId com.whatsapp --path ./apk-downloads/
 ```
 
-Use `gplaydl` without saving login info in cache:
-```
-gplaydl -id com.whatsapp -e email@gmail.com -p password
+Download WhatsApp using another device, i.e. `angler` ([Available Devices](https://github.com/NoMore201/googleplay-api/blob/master/gpapi/device.properties))
+
+```bash
+gplaydl download --packageId com.whatsapp --device angler
 ```
 
-Store APK file in a custom directory:
-```
-gplaydl -id com.whatsapp -d folder-name-or-path
+### Expansion Files:
+Since version 1.2.0, expansion files are downloaded as well if they are available. If you don't want to download expansion files, set the flag to false:
+
+```bash
+gplaydl download --packageid com.rayark.Cytus.full --ex False
 ```
 
-Download a game with expansion (OBB) files (Does not make a difference if expansion files are not available for an app or a game):
-```
-gplaydl -id com.rayark.Cytus.full -ex
+### Change Google Account
+Your Google login info is stored in a cache file and whenever the tokens expire, login info from the cached file is used to refresh the tokens. If your Google account password is changed, you will be prompted to provided new details whenever you will attempt to download an app.
+
+But if you want to change your Google account for gplaydl, simply reconfigure it and your new account will be set in the cache:
+
+```bash
+gplaydl configure
 ```
 
-Upload a specific device by code (Defaults to `bacon`) ([Available Devices](https://github.com/NoMore201/googleplay-api/blob/master/gpapi/device.properties)):
-
-```
-gplaydl -id com.whatsapp -dc angler
-```
+## Web-based APK Downloader
+I've launched an awesome <a href="https://apkbucket.net/apk-downloader/">web-based APK downloader here</a> that you can use to download APK files to your PC directly from Google Play Store. It supports split APKs as well and the download links from Google servers are directly served to you.
 
 ### Features:
+* Shows download progress (since v.1.2.0)
 * No need to provide device ID (Generated automatically))
 * No need to provide auth token (Generated automatically)
 * Re-uses auth token and refreshes it if expired
