@@ -68,7 +68,7 @@ gplaydl download --packageid com.rayark.Cytus.full --ex n
 ```
 
 ### Split APKs:
-Since version 1.2.0, split APK files are downloaded as well if available. If you don't want to download split APKs, set the flag to `n`:
+Since version 1.3.0, split APK files are downloaded as well if available. If you don't want to download split APKs, set the flag to `n`:
 
 ```bash
 gplaydl download --packageid com.twitter.android --splits n
@@ -84,6 +84,9 @@ gplaydl configure
 ```
 
 ## Features
+* Full support for split APKs (since v.1.3.0)
+* Full support for OBB aka. expansion files (since v.1.3.0)
+* Supports download of (your purchased) paid apps (since v.1.3.0)
 * Shows download progress (since v.1.2.0)
 * No need to provide device ID (Generated automatically))
 * No need to provide auth token (Generated automatically)
