@@ -1,5 +1,5 @@
 # Command Line APK Downloader
-Download APK & expansion (OBB) files from Google Play Store to your PC or server directly. A command line implementation of [NoMore201/googleplay-api](https://github.com/NoMore201/googleplay-api/).
+Download APK & expansion (OBB) files from Google Play Store to your PC or server directly with minimum effort.
 
 ## Brief Instructions
 ```bash
@@ -83,7 +83,7 @@ gplaydl configure
 * Re-uses auth token and refreshes it if expired
 
 ## Web-based APK Downloader
-I've launched an awesome <a href="https://apkbucket.net/apk-downloader/">web-based APK downloader here</a> that you can use to download APK files to your PC directly from Google Play Store. It supports split APKs as well and the download links from Google servers are directly served to you.
+Aren't comfortable using CLI tools? Use my <a href="https://apkbucket.net/apk-downloader/">web-based APK downloader here</a>.
 
 ### Credits:
 [NoMore201/googleplay-api](https://github.com/NoMore201/googleplay-api/)
