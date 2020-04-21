@@ -67,7 +67,7 @@ def configureauth():
             password = None
 
     if not os.path.exists(CONFIGDIR):
-        os.makedirs(os.path.dirname(CONFIGDIR))
+        os.makedirs(os.path.dirname(CONFIGDIR), exist_ok=True)
 
     server = GooglePlayAPI("en_US", "America/New York", devicecode)
     try:
@@ -108,7 +108,7 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
         apkpath = os.path.join(storagepath, apkfname)
 
         if not os.path.isdir(storagepath):
-            os.makedirs(storagepath)
+            os.makedirs(storagepath, exist_ok=True)
         saved = 0
         totalsize = int(download.get("file").get("total_size"))
         print(colored("Downloading %s....." % apkfname, "blue"))
@@ -128,7 +128,7 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
             print(colored("Downloading %s....." % name, "blue"))
             obbpath = os.path.join(storagepath, download["docId"], name)
             if not os.path.isdir(os.path.join(storagepath, download["docId"])):
-                os.makedirs(os.path.join(storagepath, download["docId"]))
+                os.makedirs(os.path.join(storagepath, download["docId"]), exist_ok=True)
 
             saved = 0
             totalsize = int(obb.get("file").get("total_size"))
@@ -148,7 +148,7 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
 
 def write_cache(gsfId, token):
     if not os.path.exists(CACHEDIR):
-        os.makedirs(os.path.dirname(CACHEDIR))
+        os.makedirs(os.path.dirname(CACHEDIR), exist_ok=True)
     info = {"gsfId": gsfId, "token": token}
     pickle.dump(info, open(CACHEFILE, "wb"))
 
@@ -195,11 +195,10 @@ def main():
                 storagepath = "./"
             downloadapp(packageId=args.packageId,
                         expansionFiles=args.expansionfiles, storagepath=storagepath)
+		else:
+			print(colored("Provide a package ID (--packageId) to download an app or a game.", "yellow"))
         sys.exit(0)
-    else:
-        print(colored(
-            "Provide a package ID (--packageId) to download an app or a game.", "yellow"))
-        sys.exit(0)
+        
 
 
 if args.action not in ["download", "configure"]:
