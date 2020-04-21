@@ -4,7 +4,7 @@ Download APK & expansion (OBB) files from Google Play Store to your personal com
 ## Brief Instructions
 ```bash
 # Install the package
-pip3 install gplaydl
+pip3 install --upgrade --force-reinstall gplaydl
 
 # Configure auth
 gplaydl configure
@@ -17,8 +17,10 @@ gplaydl download --packageId com.whatsapp
 So the brief instructions didn't get you going? Here is a detailed guide for you. Let's beging with installing the package using PIP3.
 
 ```bash
-pip3 install gplaydl
+pip3 install --upgrade --force-reinstall gplaydl
 ```
+
+If `gplaydl` is already installed on your system, it will be upgraded to the latest version as we are forcing PIP to install from the latest release.
 
 or
 
