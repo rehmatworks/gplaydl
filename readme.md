@@ -14,7 +14,7 @@ gplaydl download --packageId com.whatsapp
 ```
 
 ## Detailed Instructions
-So the brief instructions didn't get you going? Here is a detailed guide for you. Let's beging with installing the package using PIP3.
+So the brief instructions didn't get you going? Here is a detailed guide for you. Let's begin with installing the package using PIP3.
 
 ```bash
 pip3 install --upgrade --force-reinstall gplaydl
