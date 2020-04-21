@@ -66,61 +66,62 @@ def configureauth(email=None, password=None):
 
 
 def downloadapp(packageId, email=None, password=None, expansionFiles=True, storagepath='./'):
-	if email is None and password is None:
-		if os.path.exists(CONFIGFILE):
-			with open(CONFIGFILE, "rb") as f:
-				config = pickle.load(f)
-				email = config['email']
-				password = config['password']
-		else:
-			configureauth()
+	if os.path.exists(CONFIGFILE):
+		with open(CONFIGFILE, "rb") as f:
+			config = pickle.load(f)
+			email = config['email']
+			password = config['password']
+	else:
+		configureauth()
+		downloadapp(packageId=packageId, email=email, password=password,
+					expansionFiles=expansionFiles, storagepath=storagepath)
 
-		server = GooglePlayAPI('en_US', 'America/New York', args.deviceCode)
-		try:
-			server = do_login(server, email, password)
-		except Exception as e:
-			print(colored('Login failed. Please re-configure your auth.', 'yellow'))
-			configureauth()
-		
-		try:
-			print(colored('Attempting to download ' + packageId, 'blue'))
-			download = server.download(packageId, expansion_files=expansionFiles)
-			apkfname = download['docId'] + '.apk'
-			apkpath = os.path.join(storagepath, apkfname)
-			if not os.path.isdir(storagepath):
-				os.makedirs(storagepath)
+	server = GooglePlayAPI('en_US', 'America/New York', args.deviceCode)
+	try:
+		server = do_login(server, email, password)
+	except Exception as e:
+		print(colored('Login failed. Please re-configure your auth.', 'yellow'))
+		configureauth()
+	
+	try:
+		print(colored('Attempting to download ' + packageId, 'blue'))
+		download = server.download(packageId, expansion_files=expansionFiles)
+		apkfname = download['docId'] + '.apk'
+		apkpath = os.path.join(storagepath, apkfname)
+		if not os.path.isdir(storagepath):
+			os.makedirs(storagepath)
+		saved = 0
+		totalsize = int(download.get('file').get('total_size'))
+		print(colored('Downloading ' + apkfname + '.....', 'blue'))
+		with open(apkpath, 'wb') as first:
+			for chunk in download.get('file').get('data'):
+				saved += len(chunk)
+				first.write(chunk)
+				done = int(50 * saved / totalsize)
+				sys.stdout.write("\r[%s%s] %s%s (%s/%s)" % ('*' * done, ' ' * (50-done), int((saved/totalsize)*100), '%', sizeof_fmt(saved), sizeof_fmt(totalsize)))
+		print('')
+		print(colored('APK downloaded and stored at ' + apkpath, 'green'))
+
+		for obb in download['additionalData']:
+			name = obb['type'] + '.' + str(obb['versionCode']) + '.' + download['docId'] + '.obb'
+			print(colored('Downloading ' + name + '.....', 'blue'))
+			obbpath = os.path.join(storagepath, download['docId'], name)
+			if not os.path.isdir(os.path.join(storagepath, download['docId'])):
+				os.makedirs(os.path.join(storagepath, download['docId']))
+			
 			saved = 0
-			totalsize = int(download.get('file').get('total_size'))
-			print(colored('Downloading ' + apkfname + '.....', 'blue'))
-			with open(apkpath, 'wb') as first:
-				for chunk in download.get('file').get('data'):
+			totalsize = int(obb.get('file').get('total_size'))
+			with open(obbpath, 'wb') as second:
+				for chunk in obb.get('file').get('data'):
+					second.write(chunk)
 					saved += len(chunk)
-					first.write(chunk)
 					done = int(50 * saved / totalsize)
 					sys.stdout.write("\r[%s%s] %s%s (%s/%s)" % ('*' * done, ' ' * (50-done), int((saved/totalsize)*100), '%', sizeof_fmt(saved), sizeof_fmt(totalsize)))
 			print('')
-			print(colored('APK downloaded and stored at ' + apkpath, 'green'))
-
-			for obb in download['additionalData']:
-				name = obb['type'] + '.' + str(obb['versionCode']) + '.' + download['docId'] + '.obb'
-				print(colored('Downloading ' + name + '.....', 'blue'))
-				obbpath = os.path.join(storagepath, download['docId'], name)
-				if not os.path.isdir(os.path.join(storagepath, download['docId'])):
-					os.makedirs(os.path.join(storagepath, download['docId']))
-				
-				saved = 0
-				totalsize = int(obb.get('file').get('total_size'))
-				with open(obbpath, 'wb') as second:
-					for chunk in obb.get('file').get('data'):
-						second.write(chunk)
-						saved += len(chunk)
-						done = int(50 * saved / totalsize)
-						sys.stdout.write("\r[%s%s] %s%s (%s/%s)" % ('*' * done, ' ' * (50-done), int((saved/totalsize)*100), '%', sizeof_fmt(saved), sizeof_fmt(totalsize)))
-				print('')
-				print(colored('OBB file downloaded and stored at ' + obbpath, 'green'))
-		except Exception as e:
-			print(str(e))
-			print(colored('Download failed. gplaydl cannot download some apps that are paid or incompatible.', 'red'))
+			print(colored('OBB file downloaded and stored at ' + obbpath, 'green'))
+	except Exception as e:
+		print(str(e))
+		print(colored('Download failed. gplaydl cannot download some apps that are paid or incompatible.', 'red'))
 
 def write_cache(gsfId, token):
 	if not os.path.exists(CACHEDIR):
