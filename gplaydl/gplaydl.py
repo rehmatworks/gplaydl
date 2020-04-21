@@ -73,8 +73,7 @@ def downloadapp(packageId, email=None, password=None, expansionFiles=True, stora
 			password = config['password']
 	else:
 		configureauth()
-		downloadapp(packageId=packageId, email=email, password=password,
-					expansionFiles=expansionFiles, storagepath=storagepath)
+		sys.exit(0)
 
 	server = GooglePlayAPI('en_US', 'America/New York', args.deviceCode)
 	try:
