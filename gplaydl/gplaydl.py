@@ -134,7 +134,7 @@ def downloadapp(packageId, expansionFiles=True, storagepath="./"):
             saved = 0
             totalsize = int(split.get("file").get("total_size"))
             with open(splitpath, "wb") as splitf:
-                for chunk in obb.get("file").get("data"):
+                for chunk in split.get("file").get("data"):
                     splitf.write(chunk)
                     saved += len(chunk)
                     done = int(50 * saved / totalsize)
