@@ -17,6 +17,9 @@ setup(name='gplaydl',
 		'gplaydl'
 	],
 	install_requires=[
-		'gpapidl'
+		'gpapidl',
+		'validators',
+		'termcolor',
+		'pickle'
 	]
 )
