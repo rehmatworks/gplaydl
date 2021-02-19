@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='gplaydl',
-	version='1.3.4',
+	version='1.3.5',
 	description='Google Play APK downloader command line utility that utilizes gpapi to download APK files of free apps and games.',
 	author="Rehmat Alam",
 	author_email="contact@rehmat.works",
