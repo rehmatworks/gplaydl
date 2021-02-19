@@ -1,6 +1,9 @@
 # Command Line APK Downloader
 Download APK, split APKs, and expansion (OBB) files from Google Play Store to your PC or server directly with minimum effort.
 
+### Video Guide
+[https://www.youtube.com/watch?v=dy6rPpaxj3Q&feature=youtu.be](https://www.youtube.com/watch?v=dy6rPpaxj3Q&feature=youtu.be)
+
 ## Brief Instructions
 ```bash
 # Install the package
