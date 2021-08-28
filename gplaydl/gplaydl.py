@@ -23,7 +23,7 @@ cp.add_argument('--device', dest='device',
 
 # Args for downloading an app
 dl = subparsers.add_parser(
-    'download', help='download an app or a game from Google Play.')
+    'download', help='Download an app or a game from Google Play.')
 dl.add_argument('--device', dest='device',
                 help='Device code name', default=devicecode)
 dl.add_argument('--packageId', required=True, dest='packageId',
@@ -31,9 +31,9 @@ dl.add_argument('--packageId', required=True, dest='packageId',
 dl.add_argument('--path', dest='storagepath',
                 help='Path where to store downloaded files', default=False)
 dl.add_argument('--ex', dest='expansionfiles',
-                help='download expansion (OBB) data if available', default='y')
+                help='Download expansion (OBB) data if available', default='y')
 dl.add_argument('--splits', dest='splits',
-                help='download split APKs if available', default='y')
+                help='Download split APKs if available', default='y')
 
 args = ap.parse_args()
 
@@ -123,7 +123,7 @@ def downloadapp(packageId, paid=False):
             os.makedirs(storagepath, exist_ok=True)
         saved = 0
         totalsize = int(download.get('file').get('total_size'))
-        print(colored('downloading %s.....' % apkfname, 'blue'))
+        print(colored('Downloading %s.....' % apkfname, 'blue'))
         with open(apkpath, 'wb') as apkf:
             for chunk in download.get('file').get('data'):
                 saved += len(chunk)
@@ -137,7 +137,7 @@ def downloadapp(packageId, paid=False):
         if args.splits == 'y':
             for split in download.get('splits'):
                 name = '%s.apk' % (split.get('name'))
-                print(colored('downloading %s.....' % name, 'blue'))
+                print(colored('Downloading %s.....' % name, 'blue'))
                 splitpath = os.path.join(
                     storagepath, download.get('docId'), name)
                 if not os.path.isdir(os.path.join(storagepath, download.get('docId'))):
@@ -160,7 +160,7 @@ def downloadapp(packageId, paid=False):
         for obb in download.get('additionalData'):
             name = '%s.%s.%s.obb' % (obb.get('type'), str(
                 obb.get('versionCode')), download.get('docId'))
-            print(colored('downloading %s.....' % name, 'blue'))
+            print(colored('Downloading %s.....' % name, 'blue'))
             obbpath = os.path.join(storagepath, download.get('docId'), name)
             if not os.path.isdir(os.path.join(storagepath, download.get('docId'))):
                 os.makedirs(os.path.join(
