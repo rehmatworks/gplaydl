@@ -23,7 +23,7 @@ cp.add_argument('--device', dest='device',
 
 # Args for downloading an app
 dl = subparsers.add_parser(
-    'download', help='Download an app or a game from Google Play.')
+    'download', help='download an app or a game from Google Play.')
 dl.add_argument('--device', dest='device',
                 help='Device code name', default=devicecode)
 dl.add_argument('--packageId', required=True, dest='packageId',
@@ -31,9 +31,9 @@ dl.add_argument('--packageId', required=True, dest='packageId',
 dl.add_argument('--path', dest='storagepath',
                 help='Path where to store downloaded files', default=False)
 dl.add_argument('--ex', dest='expansionfiles',
-                help='Download expansion (OBB) data if available', default='y')
+                help='download expansion (OBB) data if available', default='y')
 dl.add_argument('--splits', dest='splits',
-                help='Download split APKs if available', default='y')
+                help='download split APKs if available', default='y')
 
 args = ap.parse_args()
 
@@ -86,7 +86,7 @@ def configureauth():
         configureauth()
 
 
-def downloadapp(packageId):
+def downloadapp(packageId, paid=False):
     if args.storagepath:
         storagepath = args.storagepath
     else:
@@ -110,9 +110,12 @@ def downloadapp(packageId):
         configureauth()
 
     try:
-        print(colored('Attempting to download %s' % packageId, 'blue'))
+        if not paid: print(colored('Attempting to download %s' % packageId, 'blue'))
         expansionFiles = True if args.expansionfiles == 'y' else False
-        download = server.download(packageId, expansion_files=expansionFiles)
+        if paid:
+            download = server.delivery(packageId, expansion_files=expansionFiles)
+        else:
+            download = server.download(packageId, expansion_files=expansionFiles)
         apkfname = '%s.apk' % download.get('docId')
         apkpath = os.path.join(storagepath, apkfname)
 
@@ -120,7 +123,7 @@ def downloadapp(packageId):
             os.makedirs(storagepath, exist_ok=True)
         saved = 0
         totalsize = int(download.get('file').get('total_size'))
-        print(colored('Downloading %s.....' % apkfname, 'blue'))
+        print(colored('downloading %s.....' % apkfname, 'blue'))
         with open(apkpath, 'wb') as apkf:
             for chunk in download.get('file').get('data'):
                 saved += len(chunk)
@@ -134,7 +137,7 @@ def downloadapp(packageId):
         if args.splits == 'y':
             for split in download.get('splits'):
                 name = '%s.apk' % (split.get('name'))
-                print(colored('Downloading %s.....' % name, 'blue'))
+                print(colored('downloading %s.....' % name, 'blue'))
                 splitpath = os.path.join(
                     storagepath, download.get('docId'), name)
                 if not os.path.isdir(os.path.join(storagepath, download.get('docId'))):
@@ -157,7 +160,7 @@ def downloadapp(packageId):
         for obb in download.get('additionalData'):
             name = '%s.%s.%s.obb' % (obb.get('type'), str(
                 obb.get('versionCode')), download.get('docId'))
-            print(colored('Downloading %s.....' % name, 'blue'))
+            print(colored('downloading %s.....' % name, 'blue'))
             obbpath = os.path.join(storagepath, download.get('docId'), name)
             if not os.path.isdir(os.path.join(storagepath, download.get('docId'))):
                 os.makedirs(os.path.join(
@@ -175,8 +178,11 @@ def downloadapp(packageId):
             print('')
             print(colored('OBB file downloaded and stored at %s' % obbpath, 'green'))
     except Exception as e:
-        print(colored(
+        if paid:
+            print(colored(
             'Download failed: %s' % str(e), 'red'))
+        else:
+            downloadapp(packageId, paid=True)
 
 
 def write_cache(gsfId, token):
