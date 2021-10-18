@@ -86,7 +86,7 @@ def configureauth():
         configureauth()
 
 
-def downloadapp(packageId):
+def downloadapp(packageId, paid=False):
     if args.storagepath:
         storagepath = args.storagepath
     else:
@@ -110,9 +110,12 @@ def downloadapp(packageId):
         configureauth()
 
     try:
-        print(colored('Attempting to download %s' % packageId, 'blue'))
+        if not paid: print(colored('Attempting to download %s' % packageId, 'blue'))
         expansionFiles = True if args.expansionfiles == 'y' else False
-        download = server.download(packageId, expansion_files=expansionFiles)
+        if paid:
+            download = server.delivery(packageId, expansion_files=expansionFiles)
+        else:
+            download = server.download(packageId, expansion_files=expansionFiles)
         apkfname = '%s.apk' % download.get('docId')
         apkpath = os.path.join(storagepath, apkfname)
 
@@ -175,8 +178,11 @@ def downloadapp(packageId):
             print('')
             print(colored('OBB file downloaded and stored at %s' % obbpath, 'green'))
     except Exception as e:
-        print(colored(
+        if paid:
+            print(colored(
             'Download failed: %s' % str(e), 'red'))
+        else:
+            downloadapp(packageId, paid=True)
 
 
 def write_cache(gsfId, token):
