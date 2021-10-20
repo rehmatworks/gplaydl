@@ -35,6 +35,12 @@ dl.add_argument('--ex', dest='expansionfiles',
 dl.add_argument('--splits', dest='splits',
                 help='Download split APKs if available', default='y')
 
+# Args for searching an app
+cp = subparsers.add_parser('search', help='Search app.')
+cp.add_argument(dest='searchterm')
+cp.add_argument('--device', dest='device',
+                help='Device code name', default=devicecode)
+
 args = ap.parse_args()
 
 if (args.action == 'download' or args.action == 'configure') and args.device:
@@ -91,20 +97,10 @@ def downloadapp(packageId):
         storagepath = args.storagepath
     else:
         storagepath = './'
-    if os.path.exists(CONFIGFILE):
-        with open(CONFIGFILE, 'rb') as f:
-            config = pickle.load(f)
-            email = config.get('email')
-            password = config.get('password')
-    else:
-        print(
-            colored('Login credentials not found. Please configure them first.', 'yellow'))
-        configureauth()
-        sys.exit(0)
 
     server = GooglePlayAPI('en_US', 'America/New York', args.device)
     try:
-        server = do_login(server, email, password)
+        server = do_login(server)
     except Exception as e:
         print(colored('Login failed. Please re-configure your auth.', 'yellow'))
         configureauth()
@@ -201,7 +197,18 @@ def refresh_cache(server, email, password):
     return server
 
 
-def do_login(server, email, password):
+def do_login(server):
+    if os.path.exists(CONFIGFILE):
+        with open(CONFIGFILE, 'rb') as f:
+            config = pickle.load(f)
+            email = config.get('email')
+            password = config.get('password')
+    else:
+        print(
+            colored('Login credentials not found. Please configure them first.', 'yellow'))
+        configureauth()
+        sys.exit(0)
+
     cacheinfo = read_cache()
     if cacheinfo:
         # Sign in using cached info
@@ -213,6 +220,21 @@ def do_login(server, email, password):
         # Re-authenticate using email and pass and save info to cache
         refresh_cache(server, email, password)
     return server
+
+def search(searchterm):
+
+    server = GooglePlayAPI('en_US', 'Europe/Berlin', args.device)
+    try:
+        server = do_login(server)
+    except Exception as e:
+        print(colored('Login failed. Please re-configure your auth.', 'yellow'))
+        configureauth()
+
+    result = server.search(searchterm)
+    for doc in result:
+        for cluster in doc["child"]:
+            for app in cluster["child"]:
+                print("{}".format(app["docid"]))
 
 
 def main():
@@ -229,6 +251,10 @@ def main():
             downloadapp(packageId=args.packageId)
         sys.exit(0)
 
+    if args.action == 'search':
+        search(args.searchterm)
+        sys.exit(0)
 
-if args.action not in ['download', 'configure']:
+
+if args.action not in ['download', 'configure', 'search']:
     ap.print_help()
