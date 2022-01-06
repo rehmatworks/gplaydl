@@ -18,7 +18,7 @@ setup(name='gplaydl',
 	],
 	install_requires=[
 		'certifi==2020.4.5.1',
-		'cffi==1.14.0',
+		'cffi==1.15.0',
 		'chardet==3.0.4',
 		'cryptography==2.9',
 		'decorator==4.4.2',
