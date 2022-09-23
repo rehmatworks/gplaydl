@@ -5,7 +5,7 @@ cryptography==2.9
 decorator==4.4.2
 gpapidl==1.0.2
 idna==2.9
-protobuf==3.14.0
+protobuf==3.18.3
 pycparser==2.20
 requests==2.23.0
 six==1.14.0
