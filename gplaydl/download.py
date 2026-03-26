@@ -1,10 +1,12 @@
-"""File download with Rich progress bars."""
+"""File download with httpx (async) and Rich progress bars."""
 
 from __future__ import annotations
 
+import asyncio
+from dataclasses import dataclass, field
 from pathlib import Path
 
-import requests
+import httpx
 from rich.progress import (
     BarColumn,
     DownloadColumn,
@@ -16,6 +18,7 @@ from rich.progress import (
 )
 
 CHUNK_SIZE = 64 * 1024  # 64 KB
+MAX_CONCURRENT = 4
 
 
 def make_progress() -> Progress:
@@ -31,54 +34,60 @@ def make_progress() -> Progress:
     )
 
 
-def download_file(
-    url: str,
-    dest: Path,
-    cookies: list[dict] | None = None,
-    filename_label: str | None = None,
-    progress: Progress | None = None,
+@dataclass
+class DownloadSpec:
+    """Everything needed to download a single file."""
+    url: str
+    dest: Path
+    cookies: list[dict] = field(default_factory=list)
+    label: str = ""
+
+
+async def _download_one(
+    spec: DownloadSpec,
+    client: httpx.AsyncClient,
+    progress: Progress,
+    sem: asyncio.Semaphore,
 ) -> Path:
-    """Stream-download a file with an optional Rich progress bar.
+    """Stream-download a single file with progress tracking."""
+    async with sem:
+        headers: dict[str, str] = {}
+        if spec.cookies:
+            parts = [f"{c['name']}={c['value']}" for c in spec.cookies]
+            headers["Cookie"] = "; ".join(parts)
 
-    If *progress* is provided the caller manages start/stop; otherwise a
-    standalone progress context is created for this single file.
-    """
-    headers: dict[str, str] = {}
-    if cookies:
-        parts = [f"{c['name']}={c['value']}" for c in cookies]
-        headers["Cookie"] = "; ".join(parts)
+        label = spec.label or spec.dest.name
+        task_id = progress.add_task("download", filename=label, total=None)
 
-    resp = requests.get(url, headers=headers, stream=True, timeout=(15, 300))
-    resp.raise_for_status()
+        async with client.stream("GET", spec.url, headers=headers) as resp:
+            resp.raise_for_status()
+            total = int(resp.headers.get("Content-Length", 0))
+            if total:
+                progress.update(task_id, total=total)
 
-    total = int(resp.headers.get("Content-Length", 0))
-    label = filename_label or dest.name
-
-    own_progress = progress is None
-    if own_progress:
-        progress = make_progress()
-
-    task_id = progress.add_task("download", filename=label, total=total or None)
-
-    ctx = progress if own_progress else _noop_ctx(progress)
-    with ctx:
-        with open(dest, "wb") as f:
-            for chunk in resp.iter_content(chunk_size=CHUNK_SIZE):
-                if chunk:
+            with open(spec.dest, "wb") as f:
+                async for chunk in resp.aiter_bytes(chunk_size=CHUNK_SIZE):
                     f.write(chunk)
                     progress.advance(task_id, len(chunk))
 
-    return dest
+    return spec.dest
 
 
-class _noop_ctx:
-    """No-op context manager so we can unify code paths."""
+async def _run_downloads(specs: list[DownloadSpec]) -> None:
+    """Download all files in parallel (up to MAX_CONCURRENT at once)."""
+    sem = asyncio.Semaphore(MAX_CONCURRENT)
+    timeout = httpx.Timeout(connect=15.0, read=300.0, write=30.0, pool=30.0)
+    progress = make_progress()
 
-    def __init__(self, obj):
-        self._obj = obj
+    async with httpx.AsyncClient(
+        timeout=timeout, follow_redirects=True,
+    ) as client:
+        with progress:
+            await asyncio.gather(
+                *[_download_one(s, client, progress, sem) for s in specs],
+            )
 
-    def __enter__(self):
-        return self._obj
 
-    def __exit__(self, *_):
-        pass
+def download_batch(specs: list[DownloadSpec]) -> None:
+    """Public sync entry point — download all files in parallel."""
+    asyncio.run(_run_downloads(specs))

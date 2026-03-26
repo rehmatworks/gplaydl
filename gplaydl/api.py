@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 
 import cloudscraper
-import requests
+import httpx
 
 from gplaydl.auth import build_headers
 from gplaydl.protobuf import ProtoDecoder, extract_strings
@@ -167,7 +167,7 @@ def _parse_details_proto(raw: bytes) -> tuple[str, str, int, str]:
 def get_details_proto(package: str, auth: dict) -> tuple[str, str, int, str]:
     """Fetch app details. Returns (docid, title, version_code, version_string)."""
     headers = _proto_headers(auth)
-    resp = requests.get(f"{DETAILS_URL}?doc={package}", headers=headers, timeout=30)
+    resp = httpx.get(f"{DETAILS_URL}?doc={package}", headers=headers, timeout=30)
     if resp.status_code == 404:
         raise PlayAPIError(f"App not found: {package}")
     if resp.status_code == 401:
@@ -229,8 +229,8 @@ def purchase(package: str, version_code: int, auth: dict) -> None:
     """Acquire a free app (equivalent of clicking 'Install')."""
     headers = build_headers(auth)
     headers["Content-Type"] = "application/x-www-form-urlencoded"
-    data = f"doc={package}&ot=1&vc={version_code}"
-    resp = requests.post(PURCHASE_URL, headers=headers, data=data, timeout=30)
+    body = f"doc={package}&ot=1&vc={version_code}"
+    resp = httpx.post(PURCHASE_URL, headers=headers, content=body, timeout=30)
     if resp.status_code not in (200, 204):
         pass  # non-fatal — may already be "purchased"
 
@@ -324,7 +324,7 @@ def get_delivery(package: str, version_code: int, auth: dict) -> DeliveryResult:
     """Fetch download URLs for base APK, splits, and OBB files."""
     headers = _proto_headers(auth)
     url = f"{DELIVERY_URL}?doc={package}&ot=1&vc={version_code}"
-    resp = requests.get(url, headers=headers, timeout=30)
+    resp = httpx.get(url, headers=headers, timeout=30)
     if resp.status_code == 401:
         raise AuthExpiredError("Auth token expired.")
     if resp.status_code != 200:
@@ -348,7 +348,7 @@ def get_delivery(package: str, version_code: int, auth: dict) -> DeliveryResult:
 def list_splits(package: str, auth: dict) -> list[str]:
     """Return split names from app details metadata."""
     headers = _proto_headers(auth)
-    resp = requests.get(f"{DETAILS_URL}?doc={package}", headers=headers, timeout=30)
+    resp = httpx.get(f"{DETAILS_URL}?doc={package}", headers=headers, timeout=30)
     if resp.status_code == 401:
         raise AuthExpiredError("Auth token expired.")
     if resp.status_code != 200:

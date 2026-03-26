@@ -28,7 +28,7 @@ from gplaydl.auth import (
     load_cached_auth,
     save_auth,
 )
-from gplaydl.download import download_file, make_progress
+from gplaydl.download import DownloadSpec, download_batch
 
 console = Console()
 err = Console(stderr=True)
@@ -237,43 +237,31 @@ def download(
         title=package,
     ))
 
-    # ── download base APK ────────────────────────────────────────────────
+    # ── build download specs ────────────────────────────────────────────
     base_name = f"{package}-{vc}.apk"
     base_path = output / base_name
+    base_spec = DownloadSpec(
+        url=delivery.download_url, dest=base_path,
+        cookies=delivery.cookies, label=base_name,
+    )
 
-    rprint(f"\n[bold]Downloading base APK[/bold]  [dim]({_fmt(delivery.download_size)})[/dim]")
-    progress = make_progress()
-    with progress:
-        download_file(
-            delivery.download_url, base_path,
-            cookies=delivery.cookies,
-            filename_label=base_name,
-            progress=progress,
-        )
+    extras: list[DownloadSpec] = []
+    if delivery.splits and not no_splits:
+        for split in delivery.splits:
+            name = f"{package}-{vc}-{split.name}.apk"
+            extras.append(DownloadSpec(url=split.url, dest=output / name, label=name))
+    if obb and delivery.obb_files:
+        for ob in delivery.obb_files:
+            name = f"{ob.type_label}.{ob.version_code}.{package}.obb"
+            extras.append(DownloadSpec(
+                url=ob.url, dest=output / name, cookies=ob.cookies, label=name,
+            ))
 
-        # ── splits ───────────────────────────────────────────────────────
-        if delivery.splits and not no_splits:
-            for split in delivery.splits:
-                split_name = f"{package}-{vc}-{split.name}.apk"
-                split_path = output / split_name
-                download_file(
-                    split.url, split_path,
-                    filename_label=split_name,
-                    progress=progress,
-                )
-
-        # ── OBB ──────────────────────────────────────────────────────────
-        if obb:
-            if delivery.obb_files:
-                for ob in delivery.obb_files:
-                    obb_name = f"{ob.type_label}.{ob.version_code}.{package}.obb"
-                    obb_path = output / obb_name
-                    download_file(
-                        ob.url, obb_path,
-                        cookies=ob.cookies,
-                        filename_label=obb_name,
-                        progress=progress,
-                    )
+    all_specs = [base_spec] + extras
+    total_files = len(all_specs)
+    file_label = f"{total_files} file{'s' if total_files > 1 else ''}"
+    rprint(f"\n[bold]Downloading {file_label}[/bold]  [dim]({_fmt(delivery.download_size)} base APK)[/dim]")
+    download_batch(all_specs)
 
     if obb and not delivery.obb_files:
         rprint("[yellow]No OBB / expansion files available for this app.[/yellow]")
