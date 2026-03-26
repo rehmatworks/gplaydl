@@ -2,6 +2,8 @@
 
 Download APKs from Google Play Store using anonymous authentication. Supports single APKs, split APKs (App Bundles), and OBB expansion files.
 
+> **v2.0 — Complete Rewrite.** This is a ground-up rewrite with a new CLI, pure-Python protobuf decoding (no `gpapi` dependency), and automatic token management. Looking for v1.x? See the [`master`](https://github.com/rehmatworks/gplaydl/tree/master) branch.
+
 ## Features
 
 - Anonymous authentication via Aurora Store's token dispenser (no Google account needed)
@@ -125,7 +127,7 @@ gplaydl download com.whatsapp -d https://my-dispenser.example.com/api/auth
 
 The tool includes 23 device profiles from Aurora Store, used to authenticate with Google Play's token dispenser. Profiles are rotated automatically during token acquisition to maximize compatibility.
 
-Profiles are stored as `.properties` files in the `profiles/` directory.
+Profiles are stored as `.properties` files in the `gplaydl/profiles/` directory.
 
 ## Architecture Support
 
