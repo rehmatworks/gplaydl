@@ -6,7 +6,7 @@ Profiles are rotated during token acquisition for reliability.
 
 from pathlib import Path
 
-PROFILES_DIR = Path(__file__).resolve().parent.parent / "profiles"
+PROFILES_DIR = Path(__file__).resolve().parent / "profiles"
 
 FALLBACK_PROFILE = {
     "UserReadableName": "Generic ARM64 Device",
