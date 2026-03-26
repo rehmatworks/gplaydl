@@ -259,8 +259,11 @@ def download(
 
     all_specs = [base_spec] + extras
     total_files = len(all_specs)
+    total_size = delivery.download_size + sum(s.size for s in delivery.splits if not no_splits)
+    if obb:
+        total_size += sum(ob.size for ob in delivery.obb_files)
     file_label = f"{total_files} file{'s' if total_files > 1 else ''}"
-    rprint(f"\n[bold]Downloading {file_label}[/bold]  [dim]({_fmt(delivery.download_size)} base APK)[/dim]")
+    rprint(f"\n[bold]Downloading {file_label}[/bold]  [dim]({_fmt(total_size)})[/dim]")
     download_batch(all_specs)
 
     if obb and not delivery.obb_files:
