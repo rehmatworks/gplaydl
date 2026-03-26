@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -25,6 +26,7 @@ def _auth_path(arch: str) -> Path:
 def save_auth(data: dict, arch: str = "arm64") -> Path:
     """Persist auth data to disk and return the file path."""
     _CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    data["_cached_at"] = time.time()
     path = _auth_path(arch)
     path.write_text(json.dumps(data, indent=2))
     return path
@@ -83,16 +85,29 @@ def fetch_token(
     return None
 
 
+_MAX_TOKEN_AGE = 50 * 60  # 50 minutes — refresh before the ~1h Google expiry
+
+
 def ensure_auth(
     arch: str = "arm64",
     dispenser_url: Optional[str] = None,
+    force_refresh: bool = False,
 ) -> Optional[dict]:
-    """Return cached auth or fetch a new token transparently."""
-    cached = load_cached_auth(arch)
-    if cached and cached.get("authToken"):
-        return cached
+    """Return cached auth or fetch a new token transparently.
 
-    console.print("[dim]No cached token — acquiring from dispenser...[/dim]")
+    Proactively refreshes tokens older than 50 minutes.
+    Pass *force_refresh=True* to ignore cache entirely (e.g. after a 401).
+    """
+    if not force_refresh:
+        cached = load_cached_auth(arch)
+        if cached and cached.get("authToken"):
+            age = time.time() - cached.get("_cached_at", 0)
+            if age < _MAX_TOKEN_AGE:
+                return cached
+            console.print("[dim]Token expired — refreshing...[/dim]")
+    else:
+        console.print("[dim]Refreshing token...[/dim]")
+
     data = fetch_token(dispenser_url=dispenser_url, arch=arch)
     if data:
         save_auth(data, arch)

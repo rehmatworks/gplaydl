@@ -13,6 +13,7 @@ from rich.table import Table
 
 from gplaydl import __version__
 from gplaydl.api import (
+    AuthExpiredError,
     PlayAPIError,
     get_delivery,
     get_details,
@@ -106,7 +107,11 @@ def info(
 
     with console.status(f"Fetching details for [bold]{package}[/bold]..."):
         try:
-            details = get_details(package, auth_data)
+            try:
+                details = get_details(package, auth_data)
+            except AuthExpiredError:
+                auth_data = _require_auth(arch, dispenser, force=True)
+                details = get_details(package, auth_data)
         except PlayAPIError as exc:
             err.print(f"[red]{exc}[/red]")
             raise typer.Exit(code=1)
@@ -166,7 +171,11 @@ def list_splits_cmd(
 
     with console.status(f"Fetching splits for [bold]{package}[/bold]..."):
         try:
-            splits = api_list_splits(package, auth_data)
+            try:
+                splits = api_list_splits(package, auth_data)
+            except AuthExpiredError:
+                auth_data = _require_auth(arch, dispenser, force=True)
+                splits = api_list_splits(package, auth_data)
         except PlayAPIError as exc:
             err.print(f"[red]{exc}[/red]")
             raise typer.Exit(code=1)
@@ -201,29 +210,32 @@ def download(
     auth_data = _require_auth(arch, dispenser)
     output.mkdir(parents=True, exist_ok=True)
 
-    # ── details ──────────────────────────────────────────────────────────
-    with console.status(f"Fetching details for [bold]{package}[/bold]..."):
+    # ── details + purchase + delivery (with auto-retry on expired token) ─
+    try:
         try:
-            details = get_details(package, auth_data)
-        except PlayAPIError as exc:
-            err.print(f"[red]{exc}[/red]")
-            raise typer.Exit(code=1)
+            with console.status(f"Fetching details for [bold]{package}[/bold]..."):
+                details = get_details(package, auth_data)
+            vc = version or details.version_code
+            with console.status("Acquiring app and fetching download URLs..."):
+                purchase(package, vc, auth_data)
+                delivery = get_delivery(package, vc, auth_data)
+        except AuthExpiredError:
+            auth_data = _require_auth(arch, dispenser, force=True)
+            with console.status(f"Fetching details for [bold]{package}[/bold]..."):
+                details = get_details(package, auth_data)
+            vc = version or details.version_code
+            with console.status("Acquiring app and fetching download URLs..."):
+                purchase(package, vc, auth_data)
+                delivery = get_delivery(package, vc, auth_data)
+    except PlayAPIError as exc:
+        err.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1)
 
-    vc = version or details.version_code
     rprint(Panel.fit(
         f"[bold]{details.title}[/bold]\n"
         f"{details.version_string}  (vc {vc})",
         title=package,
     ))
-
-    # ── purchase + delivery ──────────────────────────────────────────────
-    with console.status("Acquiring app and fetching download URLs..."):
-        try:
-            purchase(package, vc, auth_data)
-            delivery = get_delivery(package, vc, auth_data)
-        except PlayAPIError as exc:
-            err.print(f"[red]{exc}[/red]")
-            raise typer.Exit(code=1)
 
     # ── download base APK ────────────────────────────────────────────────
     base_name = f"{package}-{vc}.apk"
@@ -299,9 +311,9 @@ def download(
 # ── helpers ─────────────────────────────────────────────────────────────────
 
 
-def _require_auth(arch: str, dispenser: Optional[str]) -> dict:
+def _require_auth(arch: str, dispenser: Optional[str], *, force: bool = False) -> dict:
     """Return auth dict or exit with a helpful error."""
-    data = ensure_auth(arch=arch, dispenser_url=dispenser)
+    data = ensure_auth(arch=arch, dispenser_url=dispenser, force_refresh=force)
     if not data:
         err.print(
             "[red]Could not obtain an auth token. "

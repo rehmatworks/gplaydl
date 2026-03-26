@@ -73,6 +73,11 @@ class PlayAPIError(Exception):
     pass
 
 
+class AuthExpiredError(PlayAPIError):
+    """Raised when the API returns 401 — token needs refresh."""
+    pass
+
+
 # ---------------------------------------------------------------------------
 # Protobuf helpers
 # ---------------------------------------------------------------------------
@@ -165,11 +170,10 @@ def get_details_proto(package: str, auth: dict) -> tuple[str, str, int, str]:
     resp = requests.get(f"{DETAILS_URL}?doc={package}", headers=headers, timeout=30)
     if resp.status_code == 404:
         raise PlayAPIError(f"App not found: {package}")
+    if resp.status_code == 401:
+        raise AuthExpiredError("Auth token expired.")
     if resp.status_code != 200:
-        raise PlayAPIError(
-            f"Failed to fetch details (HTTP {resp.status_code}). "
-            "Token may be expired — run 'gplaydl auth' to refresh."
-        )
+        raise PlayAPIError(f"Failed to fetch details (HTTP {resp.status_code}).")
     docid, title, vc, vs = _parse_details_proto(resp.content)
     if not docid:
         raise PlayAPIError("App not found or unavailable for this device profile.")
@@ -321,11 +325,10 @@ def get_delivery(package: str, version_code: int, auth: dict) -> DeliveryResult:
     headers = _proto_headers(auth)
     url = f"{DELIVERY_URL}?doc={package}&ot=1&vc={version_code}"
     resp = requests.get(url, headers=headers, timeout=30)
+    if resp.status_code == 401:
+        raise AuthExpiredError("Auth token expired.")
     if resp.status_code != 200:
-        raise PlayAPIError(
-            f"Delivery failed (HTTP {resp.status_code}). "
-            "Token may have insufficient permissions."
-        )
+        raise PlayAPIError(f"Delivery failed (HTTP {resp.status_code}).")
 
     result = _parse_delivery(resp.content)
 
@@ -346,6 +349,8 @@ def list_splits(package: str, auth: dict) -> list[str]:
     """Return split names from app details metadata."""
     headers = _proto_headers(auth)
     resp = requests.get(f"{DETAILS_URL}?doc={package}", headers=headers, timeout=30)
+    if resp.status_code == 401:
+        raise AuthExpiredError("Auth token expired.")
     if resp.status_code != 200:
         raise PlayAPIError(f"Failed to fetch details (HTTP {resp.status_code})")
 
