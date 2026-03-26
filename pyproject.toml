@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gplaydl"
-version = "2.1.0"
+version = "2.1.2"
 description = "Download APKs from Google Play Store with anonymous authentication"
 readme = "readme.md"
 license = "MIT"
