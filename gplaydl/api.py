@@ -49,16 +49,25 @@ class SplitInfo:
 
 
 @dataclass
-class ObbFile:
-    file_type: int = 0  # 0 = main, 1 = patch
+class AdditionalFile:
+    file_type: int = 0  # 0 = main OBB, 1 = patch OBB, 2 = asset pack APK
     version_code: int = 0
     size: int = 0
     url: str = ""
+    gzipped: bool = False
     cookies: list[dict] = field(default_factory=list)
 
     @property
+    def is_asset_pack(self) -> bool:
+        return self.file_type == 2
+
+    @property
+    def extension(self) -> str:
+        return ".apk" if self.is_asset_pack else ".obb"
+
+    @property
     def type_label(self) -> str:
-        return {0: "main", 1: "patch"}.get(self.file_type, "main")
+        return {0: "main", 1: "patch", 2: "asset"}.get(self.file_type, "main")
 
 
 @dataclass
@@ -68,7 +77,7 @@ class DeliveryResult:
     sha1: str = ""
     cookies: list[dict] = field(default_factory=list)
     splits: list[SplitInfo] = field(default_factory=list)
-    obb_files: list[ObbFile] = field(default_factory=list)
+    additional_files: list[AdditionalFile] = field(default_factory=list)
 
 
 class PlayAPIError(Exception):
@@ -285,13 +294,29 @@ def _extract_delivery_from_fields(fields: list[tuple[int, int, Any]]) -> Deliver
         sha1=_first_string(fields, 5),
     )
 
-    # Cookies (field 4, repeated)
-    for cookie_b in _all_bytes(fields, 4):
-        cf = ProtoDecoder(cookie_b).read_all_ordered()
-        name = _first_string(cf, 1)
-        value = _first_string(cf, 2)
-        if name:
-            result.cookies.append({"name": name, "value": value})
+    # Field 4 (repeated) — contains BOTH cookies and OBB file metadata.
+    # Cookies have f1=string(name), f2=string(value).
+    # OBB entries have f1=varint(fileType), f2=varint(versionCode),
+    # f3=varint(size), f4=string(downloadUrl), f7=string(compressedUrl).
+    for f4_b in _all_bytes(fields, 4):
+        cf = ProtoDecoder(f4_b).read_all_ordered()
+        f1_wt = next((wt for fn, wt, _ in cf if fn == 1), None)
+        if f1_wt == 2:
+            name = _first_string(cf, 1)
+            value = _first_string(cf, 2)
+            if name:
+                result.cookies.append({"name": name, "value": value})
+        elif f1_wt == 0:
+            url = _first_string(cf, 4)
+            if url and url.startswith("https://"):
+                ft = _first_int(cf, 1) or 0
+                result.additional_files.append(AdditionalFile(
+                    file_type=ft,
+                    version_code=_first_int(cf, 2) or app_vc,
+                    size=_first_int(cf, 3) or 0,
+                    url=url,
+                    gzipped=False,
+                ))
 
     # Splits (field 15, repeated: 1=name, 2=size, 5=downloadUrl)
     for split_b in _all_bytes(fields, 15):
@@ -305,18 +330,18 @@ def _extract_delivery_from_fields(fields: list[tuple[int, int, Any]]) -> Deliver
                 size=_first_int(sf, 2) or 0,
             ))
 
-    # OBB / additional files (field 18, repeated: 1=fileType, 2=size, 3=downloadUrl)
-    # Field 18 is also used for encryptionParams (same shape but sub-field 3
-    # contains a non-URL IV string), so we filter by checking the URL prefix.
+    # Field 18 (repeated) — asset pack APKs (fileType=2, gzip-compressed).
+    # Structure: f1=fileType, f2=size, f3=downloadUrl (string or sub-message).
     for af_b in _all_bytes(fields, 18):
         af = ProtoDecoder(af_b).read_all_ordered()
         url = _first_string(af, 3)
         if url and url.startswith("https://"):
-            result.obb_files.append(ObbFile(
-                file_type=_first_int(af, 1) or 0,
-                version_code=app_vc,
+            ft = _first_int(af, 1) or 0
+            result.additional_files.append(AdditionalFile(
+                file_type=ft,
                 size=_first_int(af, 2) or 0,
                 url=url,
+                gzipped=ft == 2,
             ))
 
     return result

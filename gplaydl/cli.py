@@ -212,9 +212,9 @@ def download(
     version: Optional[int] = typer.Option(None, "--version", "-v", help="Specific version code."),
     dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Custom dispenser URL."),
     no_splits: bool = typer.Option(False, "--no-splits", help="Skip downloading split APKs."),
-    obb: bool = typer.Option(False, "--obb", help="Also download OBB expansion files."),
+    no_extras: bool = typer.Option(False, "--no-extras", help="Skip downloading additional files (OBB, asset packs)."),
 ) -> None:
-    """Download an APK (and optionally splits + OBB) from Google Play."""
+    """Download an APK (with splits + additional files) from Google Play."""
     auth_data = _require_auth(arch, dispenser)
     output.mkdir(parents=True, exist_ok=True)
 
@@ -258,24 +258,25 @@ def download(
         for split in delivery.splits:
             name = f"{package}-{vc}-{split.name}.apk"
             extras.append(DownloadSpec(url=split.url, dest=output / name, label=name))
-    if obb and delivery.obb_files:
-        for ob in delivery.obb_files:
-            name = f"{ob.type_label}.{ob.version_code}.{package}.obb"
+    if not no_extras and delivery.additional_files:
+        for af in delivery.additional_files:
+            if af.is_asset_pack:
+                name = f"{package}-{vc}-{af.type_label}{af.extension}"
+            else:
+                name = f"{af.type_label}.{af.version_code}.{package}{af.extension}"
             extras.append(DownloadSpec(
-                url=ob.url, dest=output / name, cookies=ob.cookies, label=name,
+                url=af.url, dest=output / name, cookies=af.cookies,
+                label=name, gzipped=af.gzipped,
             ))
 
     all_specs = [base_spec] + extras
     total_files = len(all_specs)
     total_size = delivery.download_size + sum(s.size for s in delivery.splits if not no_splits)
-    if obb:
-        total_size += sum(ob.size for ob in delivery.obb_files)
+    if not no_extras:
+        total_size += sum(af.size for af in delivery.additional_files)
     file_label = f"{total_files} file{'s' if total_files > 1 else ''}"
     rprint(f"\n[bold]Downloading {file_label}[/bold]  [dim]({_fmt(total_size)})[/dim]")
     download_batch(all_specs)
-
-    if obb and not delivery.obb_files:
-        rprint("[yellow]No OBB / expansion files available for this app.[/yellow]")
 
     # ── summary ──────────────────────────────────────────────────────────
     rprint()
@@ -290,11 +291,15 @@ def download(
             if sp.exists():
                 files_table.add_row(sp.name, _fmt(sp.stat().st_size))
 
-    if obb and delivery.obb_files:
-        for ob in delivery.obb_files:
-            op = output / f"{ob.type_label}.{ob.version_code}.{package}.obb"
-            if op.exists():
-                files_table.add_row(op.name, _fmt(op.stat().st_size))
+    if not no_extras and delivery.additional_files:
+        for af in delivery.additional_files:
+            if af.is_asset_pack:
+                fname = f"{package}-{vc}-{af.type_label}{af.extension}"
+            else:
+                fname = f"{af.type_label}.{af.version_code}.{package}{af.extension}"
+            ap = output / fname
+            if ap.exists():
+                files_table.add_row(ap.name, _fmt(ap.stat().st_size))
 
     console.print(files_table)
 

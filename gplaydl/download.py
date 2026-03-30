@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import zlib
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -41,6 +42,7 @@ class DownloadSpec:
     dest: Path
     cookies: list[dict] = field(default_factory=list)
     label: str = ""
+    gzipped: bool = False
 
 
 async def _download_one(
@@ -59,6 +61,10 @@ async def _download_one(
         label = spec.label or spec.dest.name
         task_id = progress.add_task("download", filename=label, total=None)
 
+        decompressor = (
+            zlib.decompressobj(zlib.MAX_WBITS | 16) if spec.gzipped else None
+        )
+
         async with client.stream("GET", spec.url, headers=headers) as resp:
             resp.raise_for_status()
             total = int(resp.headers.get("Content-Length", 0))
@@ -67,8 +73,16 @@ async def _download_one(
 
             with open(spec.dest, "wb") as f:
                 async for chunk in resp.aiter_bytes(chunk_size=CHUNK_SIZE):
-                    f.write(chunk)
+                    if decompressor:
+                        f.write(decompressor.decompress(chunk))
+                    else:
+                        f.write(chunk)
                     progress.advance(task_id, len(chunk))
+
+                if decompressor:
+                    remaining = decompressor.flush()
+                    if remaining:
+                        f.write(remaining)
 
     return spec.dest
 
