@@ -19,6 +19,12 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sed -i "s/version = \"0.0.0\"/version = \"$VERSION\"/" pyproject.toml
+          sed -i "s/__version__ = \"0.0.0\"/__version__ = \"$VERSION\"/" gplaydl/__init__.py
+
       - name: Install build tools
         run: pip install build
 
