@@ -1,14 +1,15 @@
 # gplaydl
 
-Download APKs from Google Play Store using anonymous authentication. Supports single APKs, split APKs (App Bundles), and OBB expansion files.
+Download APKs from Google Play Store using anonymous authentication. Downloads base APKs, split APKs (App Bundles), OBB expansion files, and Play Asset Delivery packs — all by default.
 
-> **v2.0 — Complete Rewrite.** This is a ground-up rewrite with a new CLI, pure-Python protobuf decoding (no `gpapi` dependency), and automatic token management. Looking for v1.x? See the [`master`](https://github.com/rehmatworks/gplaydl/tree/master) branch.
+> **v2.0 — Complete Rewrite.** Ground-up rewrite with a new CLI, pure-Python protobuf decoding (no `gpapi` dependency), and automatic token management. Looking for v1.x? See the [`master`](https://github.com/rehmatworks/gplaydl/tree/master) branch.
 
 ## Features
 
 - Anonymous authentication via Aurora Store's token dispenser (no Google account needed)
 - 23 device profiles with automatic rotation for reliable token acquisition
-- Download base APKs, split APKs, and OBB expansion files
+- Downloads base APK, split APKs, OBB files, and asset packs in one go
+- Streaming gzip decompression for Play Asset Delivery packs
 - Beautiful terminal UI with real-time download progress bars
 - Architecture support: ARM64 (modern phones) and ARMv7 (older phones)
 - Custom token dispenser URL support
@@ -36,7 +37,7 @@ pip install .
 # 1. Get an auth token (automatic, anonymous)
 gplaydl auth
 
-# 2. Download an app
+# 2. Download an app (base APK + splits + OBB/asset packs)
 gplaydl download com.whatsapp
 ```
 
@@ -55,17 +56,28 @@ Tokens are cached at `~/.config/gplaydl/auth-{arch}.json` and reused automatical
 
 ### `download` — Download APKs
 
+By default, `download` fetches the base APK, all split APKs, and any additional files (OBB expansion files, Play Asset Delivery packs).
+
 ```bash
-gplaydl download com.whatsapp                  # Base APK + splits
+gplaydl download com.whatsapp                  # Everything (base + splits + extras)
 gplaydl download com.whatsapp -o ./apks        # Custom output directory
 gplaydl download com.whatsapp -a armv7          # ARMv7 build
 gplaydl download com.whatsapp -v 231205015      # Specific version code
-gplaydl download com.whatsapp --no-splits       # Base APK only, skip splits
-gplaydl download com.some.game --obb            # Include OBB expansion files
+gplaydl download com.whatsapp --no-splits       # Skip split APKs
+gplaydl download com.whatsapp --no-extras       # Skip OBB / asset packs
 gplaydl download com.whatsapp -d https://...    # Use custom dispenser
 ```
 
-Split APKs are saved as individual files. Install them to a device with:
+**Output files:**
+
+| Type | Naming | Example |
+|------|--------|---------|
+| Base APK | `{package}-{vc}.apk` | `com.whatsapp-231205015.apk` |
+| Split APK | `{package}-{vc}-{split}.apk` | `com.whatsapp-231205015-config.arm64_v8a.apk` |
+| OBB (main/patch) | `{type}.{vc}.{package}.obb` | `main.20925.com.tencent.ig.obb` |
+| Asset pack | `{package}-{vc}-asset.apk` | `com.tencent.ig-20925-asset.apk` |
+
+Split APKs can be installed to a device with:
 
 ```bash
 adb install-multiple *.apk
@@ -106,8 +118,8 @@ python -m gplaydl download com.whatsapp
 1. **Authentication** — Gets an anonymous token from Aurora Store's dispenser, rotating through device profiles for reliability
 2. **Details** — Fetches app metadata (version, size, splits) via Google Play's protobuf API
 3. **Purchase** — "Purchases" the free app to get download authorization
-4. **Delivery** — Gets download URLs for the base APK, split APKs, and OBB files
-5. **Download** — Streams files from Google Play CDN with progress tracking
+4. **Delivery** — Gets download URLs for the base APK, split APKs, OBB files, and asset packs
+5. **Download** — Streams all files in parallel from Google Play CDN with progress tracking
 
 ## Token Dispenser
 
