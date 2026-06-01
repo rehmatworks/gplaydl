@@ -155,3 +155,19 @@ def get_priority_profiles(arch: str = "arm64") -> list[tuple[str, dict]]:
             seen.add(pkey)
 
     return result
+
+
+
+def load_profile_from_path(path: str) -> dict:
+    """Load a single device profile from a .properties file path.
+
+    Returns the raw profile dict (same shape as the ``"profile"`` value in
+        :data:`_ALL`), auto-detecting architecture from the ``Platforms`` field.
+    Raises ``FileNotFoundError`` if the file does not exist.
+    """
+    filepath = Path(path)
+    if not filepath.exists():
+        raise FileNotFoundError(f"Profile file not found: {filepath}")
+
+    profile = _load_properties(filepath)
+    return profile

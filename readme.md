@@ -8,6 +8,7 @@ Download APKs from Google Play Store using anonymous authentication. Downloads b
 
 - Anonymous authentication via Aurora Store's token dispenser (no Google account needed)
 - 23 device profiles with automatic rotation for reliable token acquisition
+- Select a specific device profile by path (`--profile`) for reproducible authentication
 - Downloads base APK, split APKs, OBB files, and asset packs in one go
 - Streaming gzip decompression for Play Asset Delivery packs
 - Beautiful terminal UI with real-time download progress bars
@@ -48,7 +49,8 @@ gplaydl download com.whatsapp
 ```bash
 gplaydl auth                          # Default (arm64)
 gplaydl auth --arch armv7             # Token for older ARM devices
-gplaydl auth -d https://my-server/api # Use a custom dispenser
+gplaydl auth -d https://my-server/api    # Use a custom dispenser
+gplaydl auth --profile profiles/D2.properties    # Use a specific device profile
 gplaydl auth --clear                  # Remove all cached tokens
 ```
 
@@ -65,6 +67,7 @@ gplaydl download com.whatsapp -a armv7          # ARMv7 build
 gplaydl download com.whatsapp -v 231205015      # Specific version code
 gplaydl download com.whatsapp --no-splits       # Skip split APKs
 gplaydl download com.whatsapp --no-extras       # Skip OBB / asset packs
+gplaydl download com.whatsapp --profile profiles/D2.properties     # Use specific device profile
 gplaydl download com.whatsapp -d https://...    # Use custom dispenser
 ```
 
@@ -135,6 +138,13 @@ gplaydl download com.whatsapp -d https://my-dispenser.example.com/api/auth
 ## Device Profiles
 
 The tool includes 23 device profiles from Aurora Store, used to authenticate with Google Play's token dispenser. Profiles are rotated automatically during token acquisition to maximize compatibility.
+
+You can select a specific profile by path using `--profile` / `-p` for reproducible authentication:
+
+```bash
+gplaydl auth --profile gplaydl/profiles/D2.properties
+gplaydl download com.whatsapp --profile gplaydl/profiles/Pv.properties
+```
 
 Profiles are stored as `.properties` files in the `gplaydl/profiles/` directory.
 

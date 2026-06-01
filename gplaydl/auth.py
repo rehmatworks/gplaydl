@@ -10,7 +10,7 @@ from typing import Optional
 import httpx
 from rich.console import Console
 
-from gplaydl.profiles import FALLBACK_PROFILE, get_priority_profiles
+from gplaydl.profiles import FALLBACK_PROFILE, get_priority_profiles, load_profile_from_path
 
 DEFAULT_DISPENSER_URL = "https://auroraoss.com/api/auth"
 
@@ -53,21 +53,27 @@ def clear_auth() -> None:
 def fetch_token(
     dispenser_url: Optional[str] = None,
     arch: str = "arm64",
+    profile_path: Optional[str] = None,
 ) -> Optional[dict]:
     """Obtain an anonymous auth token from the dispenser.
 
-    Rotates through device profiles until one yields an authToken.
+    When *profile_path* is provided, uses that single .properties file and
+    fails fast if it is rejected.  Otherwise rotates through built-in profiles
+    until one yields an authToken.
     Returns the full auth dict on success, None on failure.
     """
     url = dispenser_url or DEFAULT_DISPENSER_URL
     headers = {
-        "User-Agent": "com.aurora.store-4.6.1-70",
-        "Content-Type": "application/json",
-    }
+         "User-Agent": "com.aurora.store-4.6.1-70",
+         "Content-Type": "application/json",
+     }
 
-    profiles = get_priority_profiles(arch)
-    if not profiles:
-        profiles = [("fallback", FALLBACK_PROFILE)]
+    if profile_path is not None:
+        profiles = [("custom", load_profile_from_path(profile_path))]
+    else:
+        profiles = get_priority_profiles(arch)
+        if not profiles:
+            profiles = [("fallback", FALLBACK_PROFILE)]
 
     for profile_name, profile in profiles:
         device = profile.get("UserReadableName", profile_name)
@@ -90,6 +96,7 @@ _MAX_TOKEN_AGE = 50 * 60  # 50 minutes — refresh before the ~1h Google expiry
 def ensure_auth(
     arch: str = "arm64",
     dispenser_url: Optional[str] = None,
+    profile_path: Optional[str] = None,
     force_refresh: bool = False,
 ) -> Optional[dict]:
     """Return cached auth or fetch a new token transparently.
@@ -107,7 +114,7 @@ def ensure_auth(
     else:
         console.print("[dim]Refreshing token...[/dim]")
 
-    data = fetch_token(dispenser_url=dispenser_url, arch=arch)
+    data = fetch_token(dispenser_url=dispenser_url, arch=arch, profile_path=profile_path)
     if data:
         save_auth(data, arch)
     return data

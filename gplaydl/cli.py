@@ -64,6 +64,7 @@ def main(
 def auth(
     arch: str = typer.Option("arm64", help="Architecture: arm64 or armv7."),
     dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Custom dispenser URL."),
+    profile_path: Optional[str] = typer.Option(None, "--profile", "-p", help="Path to a device .properties file."),
     clear: bool = typer.Option(False, "--clear", help="Remove all cached tokens."),
 ) -> None:
     """Acquire an anonymous auth token from the dispenser."""
@@ -77,7 +78,11 @@ def auth(
     rprint()
 
     with console.status("Rotating through device profiles..."):
-        data = fetch_token(dispenser_url=dispenser, arch=arch)
+        try:
+            data = fetch_token(dispenser_url=dispenser, arch=arch, profile_path=profile_path)
+        except FileNotFoundError as exc:
+            err.print(f"[red]{exc}[/red]")
+            raise typer.Exit(code=1)
 
     if not data:
         err.print("[red]Authentication failed — all profiles rejected.[/red]")
@@ -101,16 +106,17 @@ def info(
     package: str = typer.Argument(..., help="Package name (e.g. com.whatsapp)."),
     arch: str = typer.Option("arm64", help="Architecture for token."),
     dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Custom dispenser URL."),
+    profile_path: Optional[str] = typer.Option(None, "--profile", "-p", help="Path to a device .properties file."),
 ) -> None:
     """Show app details from Google Play."""
-    auth_data = _require_auth(arch, dispenser)
+    auth_data = _require_auth(arch, dispenser, profile_path)
 
     with console.status(f"Fetching details for [bold]{package}[/bold]..."):
         try:
             try:
                 details = get_details(package, auth_data)
             except AuthExpiredError:
-                auth_data = _require_auth(arch, dispenser, force=True)
+                auth_data = _require_auth(arch, dispenser, profile_path, force=True)
                 details = get_details(package, auth_data)
         except PlayAPIError as exc:
             err.print(f"[red]{exc}[/red]")
@@ -137,16 +143,17 @@ def search(
     limit: int = typer.Option(10, "--limit", "-l", help="Max results."),
     arch: str = typer.Option("arm64", help="Architecture for token."),
     dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Custom dispenser URL."),
+    profile_path: Optional[str] = typer.Option(None, "--profile", "-p", help="Path to a device .properties file."),
 ) -> None:
     """Search for apps on Google Play."""
-    auth_data = _require_auth(arch, dispenser)
+    auth_data = _require_auth(arch, dispenser, profile_path)
 
     with console.status(f"Searching for [bold]{query}[/bold]..."):
         try:
             try:
                 results = search_apps(query, auth_data, limit=limit)
             except AuthExpiredError:
-                auth_data = _require_auth(arch, dispenser, force=True)
+                auth_data = _require_auth(arch, dispenser, profile_path, force=True)
                 results = search_apps(query, auth_data, limit=limit)
         except PlayAPIError as exc:
             err.print(f"[red]{exc}[/red]")
@@ -173,16 +180,17 @@ def list_splits_cmd(
     package: str = typer.Argument(..., help="Package name."),
     arch: str = typer.Option("arm64", help="Architecture for token."),
     dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Custom dispenser URL."),
+    profile_path: Optional[str] = typer.Option(None, "--profile", "-p", help="Path to a device .properties file."),
 ) -> None:
     """List available split APKs for an app."""
-    auth_data = _require_auth(arch, dispenser)
+    auth_data = _require_auth(arch, dispenser, profile_path)
 
     with console.status(f"Fetching splits for [bold]{package}[/bold]..."):
         try:
             try:
                 splits = api_list_splits(package, auth_data)
             except AuthExpiredError:
-                auth_data = _require_auth(arch, dispenser, force=True)
+                auth_data = _require_auth(arch, dispenser, profile_path, force=True)
                 splits = api_list_splits(package, auth_data)
         except PlayAPIError as exc:
             err.print(f"[red]{exc}[/red]")
@@ -211,11 +219,12 @@ def download(
     arch: str = typer.Option("arm64", "--arch", "-a", help="Architecture: arm64 or armv7."),
     version: Optional[int] = typer.Option(None, "--version", "-v", help="Specific version code."),
     dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Custom dispenser URL."),
+    profile_path: Optional[str] = typer.Option(None, "--profile", "-p", help="Path to a device .properties file."),
     no_splits: bool = typer.Option(False, "--no-splits", help="Skip downloading split APKs."),
     no_extras: bool = typer.Option(False, "--no-extras", help="Skip downloading additional files (OBB, asset packs)."),
 ) -> None:
     """Download an APK (with splits + additional files) from Google Play."""
-    auth_data = _require_auth(arch, dispenser)
+    auth_data = _require_auth(arch, dispenser, profile_path)
     output.mkdir(parents=True, exist_ok=True)
 
     # ── details + purchase + delivery (with auto-retry on expired token) ─
@@ -228,7 +237,7 @@ def download(
                 purchase(package, vc, auth_data)
                 delivery = get_delivery(package, vc, auth_data)
         except AuthExpiredError:
-            auth_data = _require_auth(arch, dispenser, force=True)
+            auth_data = _require_auth(arch, dispenser, profile_path, force=True)
             with console.status(f"Fetching details for [bold]{package}[/bold]..."):
                 details = get_details(package, auth_data)
             vc = version or details.version_code
@@ -315,9 +324,9 @@ def download(
 # ── helpers ─────────────────────────────────────────────────────────────────
 
 
-def _require_auth(arch: str, dispenser: Optional[str], *, force: bool = False) -> dict:
+def _require_auth(arch: str, dispenser: Optional[str], profile_path: Optional[str] = None, *, force: bool = False) -> dict:
     """Return auth dict or exit with a helpful error."""
-    data = ensure_auth(arch=arch, dispenser_url=dispenser, force_refresh=force)
+    data = ensure_auth(arch=arch, dispenser_url=dispenser, profile_path=profile_path, force_refresh=force)
     if not data:
         err.print(
             "[red]Could not obtain an auth token. "
