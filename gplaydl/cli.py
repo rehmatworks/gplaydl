@@ -28,6 +28,7 @@ from gplaydl.auth import (
     load_cached_auth,
     save_auth,
 )
+from gplaydl.contribute import show_banner
 from gplaydl.download import DownloadSpec, download_batch
 
 console = Console()
@@ -91,6 +92,7 @@ def auth(
         f"Saved  : {path}",
         title="Token",
     ))
+    show_banner(console)
 
 
 # ── info ────────────────────────────────────────────────────────────────────
@@ -310,6 +312,7 @@ def download(
         )
 
     rprint("\n[green bold]Download complete![/green bold]")
+    show_banner(console)
 
 
 # ── helpers ─────────────────────────────────────────────────────────────────

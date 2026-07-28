@@ -14,18 +14,18 @@ from gplaydl.profiles import FALLBACK_PROFILE, get_priority_profiles
 
 DEFAULT_DISPENSER_URL = "https://auroraoss.com/api/auth"
 
-_CONFIG_DIR = Path.home() / ".config" / "gplaydl"
+CONFIG_DIR = Path.home() / ".config" / "gplaydl"
 
 console = Console(stderr=True)
 
 
 def _auth_path(arch: str) -> Path:
-    return _CONFIG_DIR / f"auth-{arch}.json"
+    return CONFIG_DIR / f"auth-{arch}.json"
 
 
 def save_auth(data: dict, arch: str = "arm64") -> Path:
     """Persist auth data to disk and return the file path."""
-    _CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     data["_cached_at"] = time.time()
     path = _auth_path(arch)
     path.write_text(json.dumps(data, indent=2))
@@ -45,8 +45,8 @@ def load_cached_auth(arch: str = "arm64") -> Optional[dict]:
 
 def clear_auth() -> None:
     """Remove all cached auth files."""
-    if _CONFIG_DIR.exists():
-        for f in _CONFIG_DIR.glob("auth-*.json"):
+    if CONFIG_DIR.exists():
+        for f in CONFIG_DIR.glob("auth-*.json"):
             f.unlink(missing_ok=True)
 
 

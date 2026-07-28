@@ -29,6 +29,8 @@ gplaydl download com.whatsapp -d https://dispenser.gplaydl.com/api/auth
 
 Pass `-d` on whichever command you run, so token refreshes keep using the pool too. Any dispenser that speaks the same API works, including [one you host yourself](https://github.com/rehmatworks/gplaydl-dispenser). Every account shared brings the switch closer.
 
+gplaydl mentions this once a week after a download. If you would rather it did not, set `GPLAYDL_NO_BANNER=1`.
+
 ## Installation
 
 Requires Python 3.9 or newer.
