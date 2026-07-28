@@ -1,5 +1,14 @@
 # gplaydl
 
+<!-- Take this banner down once the pool can be the default dispenser. -->
+<p align="center">
+  <a href="#help-build-the-community-pool"><img alt="Help wanted: share a spare Google account" src="https://img.shields.io/badge/HELP_WANTED-share_a_spare_Google_account-e8590c?style=for-the-badge&labelColor=24292f"></a>
+  <a href="#help-build-the-community-pool"><img alt="Takes about two minutes" src="https://img.shields.io/badge/TAKES-about_2_minutes-2f9e44?style=for-the-badge&labelColor=24292f"></a>
+  <a href="https://dispenser.gplaydl.com"><img alt="dispenser.gplaydl.com" src="https://img.shields.io/badge/dispenser.gplaydl.com-1098ad?style=for-the-badge"></a>
+</p>
+
+**The pool needs accounts.** gplaydl still borrows its anonymous tokens from Aurora Store, and it will keep doing that until enough people have shared a spare Google account with our own dispenser. If you have a throwaway account going unused, [here is how to add it](#help-build-the-community-pool). This banner comes down when we make the switch.
+
 Download APKs from Google Play right from your terminal. One command gets you the base APK, split APKs (App Bundles), OBB expansion files and Play Asset Delivery packs, and you never need a Google account.
 
 - Anonymous authentication through a token dispenser
