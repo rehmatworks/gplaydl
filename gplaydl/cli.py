@@ -1,4 +1,4 @@
-"""Typer CLI application: auth, download, info, search, list-splits."""
+"""Typer CLI application: link, auth, download, info, search, list-splits."""
 
 from __future__ import annotations
 
@@ -22,21 +22,22 @@ from gplaydl.api import (
     search_apps,
 )
 from gplaydl.auth import (
+    DispenserError,
     clear_auth,
+    dispenser_base,
     ensure_auth,
     fetch_token,
-    load_cached_auth,
     save_auth,
 )
-from gplaydl.contribute import show_banner
 from gplaydl.download import DownloadSpec, download_batch
+from gplaydl.onboarding import ensure_linked, link as run_link
 
 console = Console()
 err = Console(stderr=True)
 
 app = typer.Typer(
     name="gplaydl",
-    help="Download APKs from Google Play Store with anonymous authentication.",
+    help="Download APKs from Google Play using a community pool of shared accounts.",
     add_completion=False,
     no_args_is_help=True,
 )
@@ -65,20 +66,27 @@ def main(
 def auth(
     arch: str = typer.Option("arm64", help="Architecture: arm64 or armv7."),
     dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Custom dispenser URL."),
+    email: Optional[str] = typer.Option(None, "--email", "-e", help="Use one of your own accounts by its address."),
     clear: bool = typer.Option(False, "--clear", help="Remove all cached tokens."),
 ) -> None:
-    """Acquire an anonymous auth token from the dispenser."""
+    """Get an auth token from the dispenser."""
     if clear:
         clear_auth()
         rprint("[green]All cached tokens removed.[/green]")
         raise typer.Exit()
 
-    rprint(f"[dim]Dispenser:[/dim] {dispenser or 'https://auroraoss.com/api/auth'}")
+    ensure_linked(console, dispenser)
+
+    rprint(f"[dim]Dispenser:[/dim] {dispenser_base(dispenser)}")
     rprint(f"[dim]Architecture:[/dim] {arch}")
     rprint()
 
-    with console.status("Rotating through device profiles..."):
-        data = fetch_token(dispenser_url=dispenser, arch=arch)
+    try:
+        with console.status("Rotating through device profiles..."):
+            data = fetch_token(dispenser_url=dispenser, arch=arch, email=email)
+    except DispenserError as exc:
+        _print_dispenser_error(exc, dispenser)
+        raise typer.Exit(code=1)
 
     if not data:
         err.print("[red]Authentication failed. Every device profile was rejected.[/red]")
@@ -92,7 +100,18 @@ def auth(
         f"Saved  : {path}",
         title="Token",
     ))
-    show_banner(console)
+
+
+# ── link ────────────────────────────────────────────────────────────────────
+
+
+@app.command()
+def link(
+    dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Dispenser to link with."),
+    code: Optional[str] = typer.Option(None, "--code", help="Pairing code from the Authenticator app."),
+) -> None:
+    """Link this machine to the dispenser with a pairing code."""
+    run_link(console, dispenser_base(dispenser), code)
 
 
 # ── info ────────────────────────────────────────────────────────────────────
@@ -213,11 +232,12 @@ def download(
     arch: str = typer.Option("arm64", "--arch", "-a", help="Architecture: arm64 or armv7."),
     version: Optional[int] = typer.Option(None, "--version", "-v", help="Specific version code."),
     dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Custom dispenser URL."),
+    email: Optional[str] = typer.Option(None, "--email", "-e", help="Use one of your own accounts by its address."),
     no_splits: bool = typer.Option(False, "--no-splits", help="Skip downloading split APKs."),
     no_extras: bool = typer.Option(False, "--no-extras", help="Skip downloading additional files (OBB, asset packs)."),
 ) -> None:
     """Download an APK (with splits + additional files) from Google Play."""
-    auth_data = _require_auth(arch, dispenser)
+    auth_data = _require_auth(arch, dispenser, email=email)
     output.mkdir(parents=True, exist_ok=True)
 
     # ── details + purchase + delivery (with auto-retry on expired token) ─
@@ -230,7 +250,7 @@ def download(
                 purchase(package, vc, auth_data)
                 delivery = get_delivery(package, vc, auth_data)
         except AuthExpiredError:
-            auth_data = _require_auth(arch, dispenser, force=True)
+            auth_data = _require_auth(arch, dispenser, force=True, email=email)
             with console.status(f"Fetching details for [bold]{package}[/bold]..."):
                 details = get_details(package, auth_data)
             vc = version or details.version_code
@@ -312,15 +332,27 @@ def download(
         )
 
     rprint("\n[green bold]Download complete![/green bold]")
-    show_banner(console)
 
 
 # ── helpers ─────────────────────────────────────────────────────────────────
 
 
-def _require_auth(arch: str, dispenser: Optional[str], *, force: bool = False) -> dict:
+def _require_auth(
+    arch: str,
+    dispenser: Optional[str],
+    *,
+    force: bool = False,
+    email: Optional[str] = None,
+) -> dict:
     """Return auth dict or exit with a helpful error."""
-    data = ensure_auth(arch=arch, dispenser_url=dispenser, force_refresh=force)
+    ensure_linked(console, dispenser)
+    try:
+        data = ensure_auth(
+            arch=arch, dispenser_url=dispenser, force_refresh=force, email=email,
+        )
+    except DispenserError as exc:
+        _print_dispenser_error(exc, dispenser)
+        raise typer.Exit(code=1)
     if not data:
         err.print(
             "[red]Could not obtain an auth token. "
@@ -328,6 +360,16 @@ def _require_auth(arch: str, dispenser: Optional[str], *, force: bool = False) -
         )
         raise typer.Exit(code=1)
     return data
+
+
+def _print_dispenser_error(exc: DispenserError, dispenser: Optional[str]) -> None:
+    """Show the dispenser's refusal, plus the way out when we know it."""
+    err.print(f"[red]{exc.message}[/red]")
+    if exc.status == 401 and dispenser:
+        err.print(
+            f"[dim]No key is stored for this dispenser. Link it with "
+            f"[bold]gplaydl link -d {dispenser_base(dispenser)}[/bold][/dim]"
+        )
 
 
 def _fmt(size_bytes: int | float) -> str:

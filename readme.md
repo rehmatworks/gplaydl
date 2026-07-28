@@ -1,43 +1,14 @@
 # gplaydl
 
-<!-- Take this banner down once the pool can be the default dispenser. -->
-<p align="center">
-  <a href="#help-build-the-community-pool"><img alt="Help wanted: share a spare Google account" src="https://img.shields.io/badge/HELP_WANTED-share_a_spare_Google_account-e8590c?style=for-the-badge&labelColor=24292f"></a>
-  <a href="#help-build-the-community-pool"><img alt="Takes about two minutes" src="https://img.shields.io/badge/TAKES-about_2_minutes-2f9e44?style=for-the-badge&labelColor=24292f"></a>
-</p>
+Download APKs from Google Play right from your terminal. One command gets you the base APK, split APKs (App Bundles), OBB expansion files and Play Asset Delivery packs.
 
-**The pool needs accounts.** gplaydl still borrows its anonymous tokens from Aurora Store, and it will keep doing that until enough people have shared a spare Google account with our own dispenser. If you have a throwaway account going unused, [here is how to add it](#help-build-the-community-pool). This banner comes down when we make the switch.
+Downloads run on a community pool of Google accounts that gplaydl users share, so your own accounts stay out of it. Everyone who uses the pool puts one spare account in. That is the whole deal, and setting it up takes about two minutes.
 
-Download APKs from Google Play right from your terminal. One command gets you the base APK, split APKs (App Bundles), OBB expansion files and Play Asset Delivery packs, and you never need a Google account.
-
-- Anonymous authentication through a token dispenser
 - Base APK, splits, OBB files and asset packs downloaded together by default
+- Community-pooled authentication: downloads never touch your personal account
 - 23 device profiles, rotated automatically so authentication keeps working
 - Pure-Python protobuf decoding, no `gpapi` dependency
 - Live progress bars, plus `search`, `info` and `list-splits` for browsing
-
-## Help build the community pool
-
-gplaydl has always borrowed anonymous tokens from Aurora Store's dispenser. That works, but it is not fair to lean on someone else's service forever, so gplaydl now runs [its own dispenser](https://dispenser.gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-dispenser)). It is stocked entirely with accounts that people have shared.
-
-If you have a throwaway Google account to spare, you can help. It takes about two minutes:
-
-1. Install the [gplaydl Authenticator](https://dispenser.gplaydl.com) app on any Android device ([source](https://github.com/rehmatworks/gplaydl-authenticator)).
-2. Sign in with a spare Google account. Please do not use your personal one.
-3. Choose "Share with community".
-
-Your password and 2FA codes never leave your phone. The app uploads only the resulting Play token and the account's email address. If you change your mind, you can make an account private again or delete it from the app at any time.
-
-Once the pool is big enough to depend on, gplaydl will use it by default and stop calling Aurora's. Until then Aurora stays the default and ours is opt-in:
-
-```bash
-gplaydl auth -d https://dispenser.gplaydl.com/api/auth
-gplaydl download com.whatsapp -d https://dispenser.gplaydl.com/api/auth
-```
-
-Pass `-d` on whichever command you run, so token refreshes keep using the pool too. Any dispenser that speaks the same API works, including [one you host yourself](https://github.com/rehmatworks/gplaydl-dispenser). Every account shared brings the switch closer.
-
-gplaydl mentions this once a week after a download. If you would rather it did not, set `GPLAYDL_NO_BANNER=1`.
 
 ## Installation
 
@@ -51,14 +22,33 @@ Or from source:
 
 ```bash
 git clone https://github.com/rehmatworks/gplaydl.git && cd gplaydl
-pip install .                             # or skip this and run it in place:
-python -m gplaydl download com.whatsapp
+pip install .
 ```
+
+## First-time setup
+
+You will need any Android phone for a couple of minutes, and one spare Google account you do not care about.
+
+1. Install the [gplaydl Authenticator](https://dispenser.gplaydl.com) app ([source](https://github.com/rehmatworks/gplaydl-authenticator)) on the phone. It is not on Google Play, so Android will ask you to allow the install.
+2. In the app, sign in with a spare Google account and choose **Community**. Please never use your main account here: Google sometimes restricts accounts it sees on unofficial clients, so treat whatever you share as expendable.
+3. Open **Link gplaydl** in the app, then run this on your computer and type in the code it shows:
+
+```bash
+gplaydl link
+```
+
+Done. Every download now works, and the account you shared serves other people's downloads the same way theirs serve yours:
+
+```bash
+gplaydl download com.whatsapp
+```
+
+Your Google password and 2FA codes never leave the phone; the app uploads only the resulting Play token. You can make your account private or delete it in the app whenever you like, and if you skip `gplaydl link`, the first command that needs it will walk you through the same steps.
 
 ## Quick start
 
 ```bash
-gplaydl auth                    # get an anonymous token
+gplaydl link                    # once, with the code from the app
 gplaydl download com.whatsapp   # base APK + splits + OBB/asset packs
 ```
 
@@ -66,9 +56,21 @@ gplaydl download com.whatsapp   # base APK + splits + OBB/asset packs
 
 Every command takes `-d/--dispenser` to pick a dispenser and `--arch` for the device architecture.
 
+### `link`
+
+Pairs this machine with the dispenser. Run it once, or again to re-link.
+
+```bash
+gplaydl link                              # asks for the code interactively
+gplaydl link --code ABCD-EFGH             # or pass it directly
+gplaydl link -d https://your.dispenser    # link to a self-hosted dispenser
+```
+
+The key lands in `~/.config/gplaydl/config.json`. For containers and CI, set `GPLAYDL_API_KEY` instead of linking interactively.
+
 ### `auth`
 
-Gets an anonymous token and caches it.
+Gets a Play token and caches it. You rarely need to run this yourself; the other commands fetch and refresh tokens on their own.
 
 ```bash
 gplaydl auth                              # default (arm64)
@@ -76,7 +78,7 @@ gplaydl auth --arch armv7                 # older 32-bit devices
 gplaydl auth --clear                      # forget all cached tokens
 ```
 
-Tokens live in `~/.config/gplaydl/auth-{arch}.json`. The other commands reuse them and refresh them automatically before they expire.
+Tokens live in `~/.config/gplaydl/auth-{arch}.json` and refresh automatically before they expire.
 
 ### `download`
 
@@ -108,6 +110,24 @@ gplaydl search "file manager" --limit 5   # find apps by name
 gplaydl list-splits com.whatsapp          # see splits without downloading
 ```
 
+## Downloading your own purchased apps
+
+The community pool only knows free apps. To download something tied to one of your own accounts, add that account in the Authenticator app and choose **Private**, then pin it by address:
+
+```bash
+gplaydl download com.example.paid --email you@gmail.com
+```
+
+A private account is never handed to anyone else; only you can pin it, and only with your key. Be aware of the risk before adding an account you care about: Google can rate-limit, lock, or restrict accounts it sees on unofficial clients. It is uncommon, but it happens, and it is why the shared pool runs on throwaway accounts.
+
+## Self-hosting
+
+The dispenser is open source and runs anywhere Go and Postgres do. Host your own pool for a team or just for yourself:
+
+1. Follow the [dispenser deployment guide](https://github.com/rehmatworks/gplaydl-dispenser).
+2. In the Authenticator app, point **Settings → Server** at your instance and add accounts.
+3. Link gplaydl against it: `gplaydl link -d https://your.dispenser`
+
 ## Architecture support
 
 | Flag | ABI | Devices |
@@ -117,10 +137,14 @@ gplaydl list-splits com.whatsapp          # see splits without downloading
 
 ## How it works
 
-1. **Authenticate.** The dispenser hands back an anonymous Play token, trying device profiles in turn until one is accepted.
+1. **Authenticate.** The dispenser mints a Play token from a pooled account and hands it back, trying device profiles in turn until one is accepted.
 2. **Look up.** App metadata (version, size, split list) comes from Google Play's protobuf API.
 3. **Purchase.** Free apps are "purchased" to authorise the download.
 4. **Download.** Base APK, splits, OBB files and asset packs stream in parallel from Google's CDN.
+
+## Upgrading from 2.x
+
+gplaydl 3 switched from Aurora Store's public token dispenser to [its own](https://dispenser.gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-dispenser)), stocked entirely by its users. Run `gplaydl link` once after upgrading and you are set.
 
 ## License
 
