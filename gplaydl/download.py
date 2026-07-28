@@ -103,5 +103,5 @@ async def _run_downloads(specs: list[DownloadSpec]) -> None:
 
 
 def download_batch(specs: list[DownloadSpec]) -> None:
-    """Public sync entry point — download all files in parallel."""
+    """Public sync entry point: download all files in parallel."""
     asyncio.run(_run_downloads(specs))

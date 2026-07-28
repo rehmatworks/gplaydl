@@ -1,4 +1,4 @@
-"""Google Play Store FDFE API — details, purchase, delivery, search.
+"""Google Play Store FDFE API: details, purchase, delivery, search.
 
 Uses a pure-Python protobuf decoder (no gpapi / protobuf library needed).
 Field numbers are based on live probing from our research repo and
@@ -85,7 +85,7 @@ class PlayAPIError(Exception):
 
 
 class AuthExpiredError(PlayAPIError):
-    """Raised when the API returns 401 — token needs refresh."""
+    """Raised when the API returns 401 and the token needs a refresh."""
     pass
 
 
@@ -256,7 +256,7 @@ def purchase(package: str, version_code: int, auth: dict) -> None:
     body = f"doc={package}&ot=1&vc={version_code}"
     resp = httpx.post(PURCHASE_URL, headers=headers, content=body, timeout=30)
     if resp.status_code not in (200, 204):
-        pass  # non-fatal — may already be "purchased"
+        pass  # non-fatal; may already be "purchased"
 
 
 # ---------------------------------------------------------------------------
@@ -294,7 +294,7 @@ def _extract_delivery_from_fields(fields: list[tuple[int, int, Any]]) -> Deliver
         sha1=_first_string(fields, 5),
     )
 
-    # Field 4 (repeated) — contains BOTH cookies and OBB file metadata.
+    # Field 4 (repeated) contains BOTH cookies and OBB file metadata.
     # Cookies have f1=string(name), f2=string(value).
     # OBB entries have f1=varint(fileType), f2=varint(versionCode),
     # f3=varint(size), f4=string(downloadUrl), f7=string(compressedUrl).
@@ -330,7 +330,7 @@ def _extract_delivery_from_fields(fields: list[tuple[int, int, Any]]) -> Deliver
                 size=_first_int(sf, 2) or 0,
             ))
 
-    # Field 18 (repeated) — asset pack APKs (fileType=2, gzip-compressed).
+    # Field 18 (repeated): asset pack APKs (fileType=2, gzip-compressed).
     # Structure: f1=fileType, f2=size, f3=downloadUrl (string or sub-message).
     for af_b in _all_bytes(fields, 18):
         af = ProtoDecoder(af_b).read_all_ordered()

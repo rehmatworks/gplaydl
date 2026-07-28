@@ -80,7 +80,7 @@ FALLBACK_PROFILE = {
     ),
 }
 
-# Tested priority order — profiles that work best with Aurora dispenser and
+# Tested priority order: profiles that work best with the Aurora dispenser and
 # restricted apps (banking apps like Chase). Pixel 9a first for arm64.
 _PRIORITY_ARM64 = ["Pv", "D2", "eV", "iq", "Fj", "HE", "VP", "Hb", "p6", "B1"]
 _PRIORITY_ARMV7 = ["XK", "Gj", "IV", "Gb"]

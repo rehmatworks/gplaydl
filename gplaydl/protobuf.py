@@ -1,6 +1,6 @@
 """Minimal protobuf wire-format decoder for Google Play FDFE responses.
 
-No external dependencies — decodes varint, fixed32/64, length-delimited,
+No external dependencies. Decodes varint, fixed32/64, length-delimited,
 and proto2 GROUP wire types directly from raw bytes.
 """
 

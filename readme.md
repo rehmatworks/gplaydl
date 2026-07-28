@@ -1,6 +1,6 @@
 # gplaydl
 
-Download APKs from Google Play right from your terminal — base APKs, split APKs (App Bundles), OBB expansion files and Play Asset Delivery packs, all in one command. No Google account needed.
+Download APKs from Google Play right from your terminal. One command gets you the base APK, split APKs (App Bundles), OBB expansion files and Play Asset Delivery packs, and you never need a Google account.
 
 - Anonymous authentication through a token dispenser
 - Base APK, splits, OBB files and asset packs downloaded together by default
@@ -10,28 +10,28 @@ Download APKs from Google Play right from your terminal — base APKs, split APK
 
 ## Help build the community pool
 
-gplaydl borrows anonymous tokens from Aurora Store's dispenser. That has served us well, but leaning on someone else's service forever isn't fair to them or safe for us — so gplaydl now has [its own dispenser](https://dispenser.gplaydl.com), and it runs entirely on accounts the community shares.
+gplaydl has always borrowed anonymous tokens from Aurora Store's dispenser. That works, but it is not fair to lean on someone else's service forever, so gplaydl now runs [its own dispenser](https://dispenser.gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-dispenser)). It is stocked entirely with accounts that people have shared.
 
-**If you can spare a throwaway Google account, you can help.** It takes about two minutes:
+If you have a throwaway Google account to spare, you can help. It takes about two minutes:
 
 1. Install the [gplaydl Authenticator](https://dispenser.gplaydl.com) app on any Android device ([source](https://github.com/rehmatworks/gplaydl-authenticator)).
-2. Sign in with a **spare** Google account — please never your personal one.
-3. Choose **Share with community**.
+2. Sign in with a spare Google account. Please do not use your personal one.
+3. Choose "Share with community".
 
-Your password and 2FA codes never leave your phone — the app uploads only the resulting Play token and the account's email address. You can make an account private again, or delete it, from the app whenever you like.
+Your password and 2FA codes never leave your phone. The app uploads only the resulting Play token and the account's email address. If you change your mind, you can make an account private again or delete it from the app at any time.
 
-**Once the pool is large enough to be dependable, gplaydl will use it by default** and stop relying on Aurora's dispenser. Until then Aurora stays the default and ours is opt-in:
+Once the pool is big enough to depend on, gplaydl will use it by default and stop calling Aurora's. Until then Aurora stays the default and ours is opt-in:
 
 ```bash
 gplaydl auth -d https://dispenser.gplaydl.com/api/auth
 gplaydl download com.whatsapp -d https://dispenser.gplaydl.com/api/auth
 ```
 
-Pass `-d` on whichever command you run, so token refreshes keep using the pool too. Any dispenser speaking the same API works, including one you host yourself. Every account shared makes the switch happen sooner.
+Pass `-d` on whichever command you run, so token refreshes keep using the pool too. Any dispenser that speaks the same API works, including [one you host yourself](https://github.com/rehmatworks/gplaydl-dispenser). Every account shared brings the switch closer.
 
 ## Installation
 
-**Requires Python 3.9+**
+Requires Python 3.9 or newer.
 
 ```bash
 pip install gplaydl
@@ -56,7 +56,9 @@ gplaydl download com.whatsapp   # base APK + splits + OBB/asset packs
 
 Every command takes `-d/--dispenser` to pick a dispenser and `--arch` for the device architecture.
 
-### `auth` — get an authentication token
+### `auth`
+
+Gets an anonymous token and caches it.
 
 ```bash
 gplaydl auth                              # default (arm64)
@@ -64,9 +66,9 @@ gplaydl auth --arch armv7                 # older 32-bit devices
 gplaydl auth --clear                      # forget all cached tokens
 ```
 
-Tokens are cached in `~/.config/gplaydl/auth-{arch}.json`, reused by the other commands, and refreshed automatically before they expire.
+Tokens live in `~/.config/gplaydl/auth-{arch}.json`. The other commands reuse them and refresh them automatically before they expire.
 
-### `download` — download an app
+### `download`
 
 Fetches the base APK, every split APK, and any extra files unless you opt out.
 
@@ -105,11 +107,11 @@ gplaydl list-splits com.whatsapp          # see splits without downloading
 
 ## How it works
 
-1. **Authenticate** — the dispenser hands back an anonymous Play token, trying device profiles in turn until one is accepted.
-2. **Look up** — app metadata (version, size, split list) comes from Google Play's protobuf API.
-3. **Purchase** — free apps are "purchased" to authorise the download.
-4. **Download** — base APK, splits, OBB files and asset packs stream in parallel from Google's CDN.
+1. **Authenticate.** The dispenser hands back an anonymous Play token, trying device profiles in turn until one is accepted.
+2. **Look up.** App metadata (version, size, split list) comes from Google Play's protobuf API.
+3. **Purchase.** Free apps are "purchased" to authorise the download.
+4. **Download.** Base APK, splits, OBB files and asset packs stream in parallel from Google's CDN.
 
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+MIT. See [LICENSE](LICENSE).

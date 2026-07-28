@@ -84,7 +84,7 @@ def fetch_token(
     return None
 
 
-_MAX_TOKEN_AGE = 50 * 60  # 50 minutes — refresh before the ~1h Google expiry
+_MAX_TOKEN_AGE = 50 * 60  # 50 minutes, so we refresh before the ~1h Google expiry
 
 
 def ensure_auth(
@@ -103,7 +103,7 @@ def ensure_auth(
             age = time.time() - cached.get("_cached_at", 0)
             if age < _MAX_TOKEN_AGE:
                 return cached
-            console.print("[dim]Token expired — refreshing...[/dim]")
+            console.print("[dim]Token expired, refreshing...[/dim]")
     else:
         console.print("[dim]Refreshing token...[/dim]")
 

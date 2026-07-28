@@ -1,3 +1,3 @@
-"""GPlay APK Downloader — download APKs from Google Play Store."""
+"""Download APKs from the Google Play Store."""
 
 __version__ = "0.0.0"

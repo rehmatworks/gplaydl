@@ -1,4 +1,4 @@
-"""Typer CLI application — auth, download, info, search, list-splits."""
+"""Typer CLI application: auth, download, info, search, list-splits."""
 
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ def main(
         help="Show version and exit.",
     ),
 ) -> None:
-    """GPlay APK Downloader — download APKs from Google Play Store."""
+    """Download APKs from the Google Play Store."""
 
 
 # ── auth ────────────────────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ def auth(
         data = fetch_token(dispenser_url=dispenser, arch=arch)
 
     if not data:
-        err.print("[red]Authentication failed — all profiles rejected.[/red]")
+        err.print("[red]Authentication failed. Every device profile was rejected.[/red]")
         raise typer.Exit(code=1)
 
     path = save_auth(data, arch)
