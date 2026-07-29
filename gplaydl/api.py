@@ -46,8 +46,17 @@ class SplitInfo:
     name: str
     url: str = ""
     size: int = 0
+    sha256: str = ""
     gzipped_url: str = ""
     gzipped_size: int = 0
+
+
+@dataclass
+class DexMetadata:
+    """The .dm file (baseline profile + vdex) Play installs with the base APK."""
+    url: str = ""
+    size: int = 0
+    sha256: str = ""
 
 
 @dataclass
@@ -83,6 +92,7 @@ class DeliveryResult:
     cookies: list[dict] = field(default_factory=list)
     splits: list[SplitInfo] = field(default_factory=list)
     additional_files: list[AdditionalFile] = field(default_factory=list)
+    dex_metadata: Optional[DexMetadata] = None
 
 
 class PlayAPIError(Exception):
@@ -310,7 +320,9 @@ def purchase(package: str, version_code: int, auth: dict) -> str:
 #          8=compressed variant {1=type, 2=size, 3=url})
 #   18 = compressedAppData    (message: 1=type(2=gzip), 2=size, 3=url)
 #          -> the BASE APK again, gzip-compressed. Not a separate file!
-#   19 = sha256               (string)
+#   19 = sha256               (string, base64url without padding)
+#   21 = dexMetadata          (message: 1=size, 2=sha256, 3=url) -- the .dm
+#          file (baseline profile + vdex) installed alongside the base APK
 #   29 = latest versionCode   (varint)
 
 def _parse_delivery(raw: bytes) -> DeliveryResult:
@@ -404,9 +416,22 @@ def _extract_delivery_from_fields(fields: list[tuple[int, int, Any]]) -> Deliver
             name=name or f"split{len(result.splits)}",
             url=url,
             size=_first_int(sf, 2) or 0,
+            sha256=_first_string(sf, 9),
             gzipped_url=gz_url,
             gzipped_size=gz_size,
         ))
+
+    # DEX metadata (field 21): the .dm file Play installs with the base APK.
+    for dm_b in _all_bytes(fields, 21):
+        df = ProtoDecoder(dm_b).read_all_ordered()
+        url = _first_string(df, 3)
+        if url.startswith("https://"):
+            result.dex_metadata = DexMetadata(
+                url=url,
+                size=_first_int(df, 1) or 0,
+                sha256=_first_string(df, 2),
+            )
+            break
 
     return result
 

@@ -32,7 +32,7 @@ from gplaydl.auth import (
     fetch_token_for_profile,
     save_auth,
 )
-from gplaydl.download import DownloadSpec, download_batch
+from gplaydl.download import DownloadError, DownloadSpec, download_batch
 from gplaydl.onboarding import ensure_linked, link as run_link
 from gplaydl.profiles import ABI_TOKENS, get_compat_profiles, get_discovery_profiles
 
@@ -246,6 +246,7 @@ def download(
     email: Optional[str] = typer.Option(None, "--email", "-e", help="Pick a specific account by address when you linked several."),
     no_splits: bool = typer.Option(False, "--no-splits", help="Skip downloading split APKs."),
     no_extras: bool = typer.Option(False, "--no-extras", help="Skip downloading additional files (OBB, asset packs)."),
+    dm: bool = typer.Option(False, "--dm", help="Also download the DEX metadata (.dm) file Play installs with the base APK to speed up first launch."),
 ) -> None:
     """Download an APK (with splits + additional files) from Google Play."""
     archs = [a.strip() for a in arch.split(",") if a.strip()]
@@ -262,7 +263,8 @@ def download(
     specs: dict[str, DownloadSpec] = {}       # dest filename -> spec
     expected: dict[str, int] = {}             # dest filename -> expected bytes
     shown_panel = False
-    split_vcs: list[int] = []  # version codes that came with split APKs
+    split_vcs: list[int] = []   # version codes that came with split APKs
+    dm_names: dict[int, str] = {}  # version code -> .dm filename
 
     for arch_item in archs:
         auth_data = _require_auth(arch_item, dispenser, email=email)
@@ -301,6 +303,8 @@ def download(
                 cookies=delivery.cookies,
                 label=base_name,
                 gzipped=use_gzip,
+                sha256=delivery.sha256,
+                sha1=delivery.sha1,
             )
             expected[base_name] = (
                 delivery.gzipped_size if use_gzip else delivery.download_size
@@ -319,8 +323,20 @@ def download(
                     dest=output / name,
                     label=name,
                     gzipped=use_gzip,
+                    sha256=split.sha256,
                 )
                 expected[name] = split.gzipped_size if use_gzip else split.size
+
+        if dm and delivery.dex_metadata:
+            name = f"{package}-{vc}.dm"
+            if name not in specs:
+                dmeta = delivery.dex_metadata
+                specs[name] = DownloadSpec(
+                    url=dmeta.url, dest=output / name, label=name,
+                    sha256=dmeta.sha256,
+                )
+                expected[name] = dmeta.size
+                dm_names[vc] = name
 
         if not no_extras and delivery.additional_files:
             for af in delivery.additional_files:
@@ -347,7 +363,11 @@ def download(
         f"\n[bold]Downloading {file_label}[/bold]  "
         f"[dim]({_fmt(sum(expected.values()))} to transfer)[/dim]"
     )
-    download_batch(all_specs)
+    try:
+        download_batch(all_specs)
+    except DownloadError as exc:
+        err.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1)
 
     # ── summary ──────────────────────────────────────────────────────────
     rprint()
@@ -366,7 +386,10 @@ def download(
         # times" or a base APK conflict.
         rprint("\n[dim]Tip: install split APKs to a device with[/dim]")
         for vc in split_vcs:
-            rprint(f"[dim]  [bold]adb install-multiple {package}-{vc}*.apk[/bold][/dim]")
+            cmd = f"adb install-multiple {package}-{vc}*.apk"
+            if vc in dm_names:
+                cmd += f" {dm_names[vc]}"
+            rprint(f"[dim]  [bold]{cmd}[/bold][/dim]")
 
     rprint("\n[green bold]Download complete![/green bold]")
 

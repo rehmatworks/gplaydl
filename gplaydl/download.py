@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import hashlib
 import zlib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -35,6 +37,11 @@ def make_progress() -> Progress:
     )
 
 
+class DownloadError(Exception):
+    """A file arrived broken (hash mismatch with what Google Play declared)."""
+    pass
+
+
 @dataclass
 class DownloadSpec:
     """Everything needed to download a single file."""
@@ -43,6 +50,14 @@ class DownloadSpec:
     cookies: list[dict] = field(default_factory=list)
     label: str = ""
     gzipped: bool = False
+    # Expected digests as Play reports them: base64url without padding.
+    # The digest is of the final file (after gzip decompression).
+    sha256: str = ""
+    sha1: str = ""
+
+
+def _b64_digest(hasher) -> str:
+    return base64.urlsafe_b64encode(hasher.digest()).decode().rstrip("=")
 
 
 async def _download_one(
@@ -65,6 +80,13 @@ async def _download_one(
             zlib.decompressobj(zlib.MAX_WBITS | 16) if spec.gzipped else None
         )
 
+        if spec.sha256:
+            hasher, expected = hashlib.sha256(), spec.sha256
+        elif spec.sha1:
+            hasher, expected = hashlib.sha1(), spec.sha1
+        else:
+            hasher, expected = None, ""
+
         async with client.stream("GET", spec.url, headers=headers) as resp:
             resp.raise_for_status()
             total = int(resp.headers.get("Content-Length", 0))
@@ -72,17 +94,32 @@ async def _download_one(
                 progress.update(task_id, total=total)
 
             with open(spec.dest, "wb") as f:
+
+                def write(data: bytes) -> None:
+                    f.write(data)
+                    if hasher:
+                        hasher.update(data)
+
                 async for chunk in resp.aiter_bytes(chunk_size=CHUNK_SIZE):
                     if decompressor:
-                        f.write(decompressor.decompress(chunk))
+                        write(decompressor.decompress(chunk))
                     else:
-                        f.write(chunk)
+                        write(chunk)
                     progress.advance(task_id, len(chunk))
 
                 if decompressor:
                     remaining = decompressor.flush()
                     if remaining:
-                        f.write(remaining)
+                        write(remaining)
+
+        if hasher:
+            actual = _b64_digest(hasher)
+            if actual != expected.rstrip("="):
+                raise DownloadError(
+                    f"{spec.dest.name} failed integrity verification: Google "
+                    f"Play declared {expected} but the download hashed to "
+                    f"{actual}. Delete the file and try again."
+                )
 
     return spec.dest
 

@@ -10,6 +10,7 @@ gplaydl downloads through a Google account you add yourself in the Authenticator
 - Device profiles rotated automatically, both for authentication and for old
   versions Google only serves to certain devices
 - Compressed transfers when Google Play offers them (often 30-40% smaller)
+- Every APK verified against the SHA-256 Google Play declares for it
 - Pure-Python protobuf decoding, no `gpapi` dependency
 - Live progress bars, plus `search`, `info` and `list-splits` for browsing
 
@@ -100,7 +101,18 @@ gplaydl download com.google.android.katniss -a tv  # Android TV build
 gplaydl download com.whatsapp -v 231205015   # specific version code
 gplaydl download com.whatsapp --no-splits    # skip split APKs
 gplaydl download com.whatsapp --no-extras    # skip OBB / asset packs
+gplaydl download com.whatsapp --dm           # also fetch the .dm metadata
 ```
+
+Downloads are verified: the base APK and every split are hashed while they
+stream in and checked against the SHA-256 that Google Play declares in the
+delivery response, so a truncated or corrupted file fails loudly instead of
+failing later at install time.
+
+`--dm` additionally fetches the DEX metadata file (`{package}-{vc}.dm`, a
+baseline profile plus vdex) that the Play Store installs alongside the base
+APK to speed up first launch. It is optional; append it to
+`adb install-multiple` after the APKs if you want it.
 
 Old version codes are served by Google only to devices it considers
 compatible: 32-bit-only APKs are refused for 64-bit-only profiles, and
