@@ -27,23 +27,27 @@ pip install .
 
 ## First-time setup
 
-You will need any Android phone for a couple of minutes, and one spare Google account you do not care about.
+You will need any Android phone for a couple of minutes, and a Google account to add.
 
 1. Install the [gplaydl Authenticator](https://dispenser.gplaydl.com) app ([source](https://github.com/rehmatworks/gplaydl-authenticator)) on the phone. It is not on Google Play, so Android will ask you to allow the install.
-2. In the app, sign in with a spare Google account and choose **Community**. Please never use your main account here: Google sometimes restricts accounts it sees on unofficial clients, so treat whatever you share as expendable.
+2. Sign in with a Google account. Before each sign-in the app asks how the account may be used:
+   - **Community** puts it in the shared pool and unlocks pool downloads for you. Use a spare account you would not mind losing, never your main one: Google sometimes restricts accounts it sees on unofficial clients.
+   - **Private** keeps the account yours alone. Nobody else can ever use it, and you reach it with `--email` (see [purchased apps](#downloading-your-own-purchased-apps) below).
 3. Open **Link gplaydl** in the app, then run this on your computer and type in the code it shows:
 
 ```bash
 gplaydl link
 ```
 
-Done. Every download now works, and the account you shared serves other people's downloads the same way theirs serve yours:
+Done. If you shared a Community account, every download now works, and your account serves other people's downloads the same way theirs serve yours:
 
 ```bash
 gplaydl download com.whatsapp
 ```
 
-Your Google password and 2FA codes never leave the phone; the app uploads only the resulting Play token. You can make your account private or delete it in the app whenever you like, and if you skip `gplaydl link`, the first command that needs it will walk you through the same steps.
+If you kept everything private, downloads work too, just always through your own accounts: pass `--email` with the address you added. The shared pool stays locked until there is a Community account behind your key.
+
+Your Google password and 2FA codes never leave the phone; the app uploads only the resulting Play token. You can flip an account between Community and Private or delete it in the app whenever you like, and if you skip `gplaydl link`, the first command that needs it will walk you through the same steps.
 
 ## Quick start
 
