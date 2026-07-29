@@ -262,7 +262,7 @@ def download(
     specs: dict[str, DownloadSpec] = {}       # dest filename -> spec
     expected: dict[str, int] = {}             # dest filename -> expected bytes
     shown_panel = False
-    any_splits = False
+    split_vcs: list[int] = []  # version codes that came with split APKs
 
     for arch_item in archs:
         auth_data = _require_auth(arch_item, dispenser, email=email)
@@ -307,7 +307,8 @@ def download(
             )
 
         if delivery.splits and not no_splits:
-            any_splits = True
+            if vc not in split_vcs:
+                split_vcs.append(vc)
             for split in delivery.splits:
                 name = f"{package}-{vc}-{split.name}.apk"
                 if name in specs:
@@ -358,11 +359,14 @@ def download(
             files_table.add_row(spec.dest.name, _fmt(spec.dest.stat().st_size))
     console.print(files_table)
 
-    if any_splits:
-        rprint(
-            "\n[dim]Tip: install split APKs to a device with "
-            "[bold]adb install-multiple *.apk[/bold][/dim]"
-        )
+    if split_vcs:
+        # Name the exact files: a bare *.apk would also sweep up any other
+        # APKs (or other versions of this app) sitting in the directory,
+        # and adb then fails with errors like "Split X defined multiple
+        # times" or a base APK conflict.
+        rprint("\n[dim]Tip: install split APKs to a device with[/dim]")
+        for vc in split_vcs:
+            rprint(f"[dim]  [bold]adb install-multiple {package}-{vc}*.apk[/bold][/dim]")
 
     rprint("\n[green bold]Download complete![/green bold]")
 

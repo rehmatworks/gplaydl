@@ -122,7 +122,19 @@ TV profile, or run `gplaydl auth --arch tv` if you just want a TV token
 | OBB (main/patch) | `{type}.{vc}.{package}.obb` | `main.20925.com.tencent.ig.obb` |
 | Asset pack | `{package}-{vc}-asset.apk` | `com.tencent.ig-20925-asset.apk` |
 
-Install a split build on a device with `adb install-multiple *.apk`.
+Install a split build on a device by naming the app's own files, e.g.
+`adb install-multiple com.whatsapp-231205015*.apk`. (Avoid a bare `*.apk`
+when other APKs sit in the same directory: adb refuses sessions that mix
+packages or contain the same split twice.)
+
+**Want a single APK instead of splits?** Google Play has no universal APK
+for App Bundle apps -- every client, including the Play Store itself,
+receives the base plus config splits and installs them as one session. The
+base APK alone will not run (its native libraries live in the
+`config.<abi>` split). If you truly need one file, merge the splits with a
+tool like [APKEditor](https://github.com/REAndroid/APKEditor)
+(`APKEditor m -i ./apks`); note the merged APK must be re-signed, so it
+will not receive updates on top of the Play-signed install.
 
 ### `info`, `search` and `list-splits`
 
