@@ -454,13 +454,18 @@ def get_delivery(
     version_code: int,
     auth: dict,
     delivery_token: str = "",
+    locales: Optional[list[str]] = None,
 ) -> DeliveryResult:
     """Fetch download URLs for base APK, splits, and OBB files.
 
     *delivery_token* is the token the purchase endpoint hands back; passing
-    it along matches what the Play client does.
+    it along matches what the Play client does. *locales* asks Play for the
+    language splits of those locales (e.g. ["en-US", "de-DE"]); Play returns
+    one config.<lang> split per requested language the app provides.
     """
     headers = _proto_headers(auth)
+    if locales:
+        headers["X-DFE-UserLanguages"] = ",".join(locales)
     url = f"{DELIVERY_URL}?doc={package}&ot=1&vc={version_code}"
     if delivery_token:
         url += f"&dtok={delivery_token}"

@@ -242,6 +242,11 @@ def download(
              "Comma-separate to download several at once (e.g. arm64,armv7).",
     ),
     version: Optional[int] = typer.Option(None, "--version", "-v", help="Specific version code."),
+    locale: Optional[str] = typer.Option(
+        None, "--locale", "-l",
+        help="Extra language splits to download, comma-separated "
+             "(e.g. de,fr,zh-CN). English is always included.",
+    ),
     dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Custom dispenser URL."),
     email: Optional[str] = typer.Option(None, "--email", "-e", help="Pick a specific account by address when you linked several."),
     no_splits: bool = typer.Option(False, "--no-splits", help="Skip downloading split APKs."),
@@ -258,6 +263,10 @@ def download(
         )
         raise typer.Exit(code=1)
 
+    locales: Optional[list[str]] = None
+    if locale:
+        locales = ["en-US"] + [x.strip() for x in locale.split(",") if x.strip()]
+
     output.mkdir(parents=True, exist_ok=True)
 
     specs: dict[str, DownloadSpec] = {}       # dest filename -> spec
@@ -271,6 +280,7 @@ def download(
         try:
             details, vc, delivery = _acquire(
                 package, version, arch_item, auth_data, dispenser, email,
+                locales=locales,
             )
         except PlayAPIError as exc:
             if len(archs) > 1:
@@ -361,7 +371,7 @@ def download(
     file_label = f"{total_files} file{'s' if total_files > 1 else ''}"
     rprint(
         f"\n[bold]Downloading {file_label}[/bold]  "
-        f"[dim]({_fmt(sum(expected.values()))} to transfer)[/dim]"
+        f"[dim]({_fmt(sum(expected.values()))}, already-verified files are skipped)[/dim]"
     )
     try:
         download_batch(all_specs)
@@ -404,6 +414,7 @@ def _acquire(
     auth_data: dict,
     dispenser: Optional[str],
     email: Optional[str],
+    locales: Optional[list[str]] = None,
 ):
     """Details + purchase + delivery, with token refresh and profile fallback.
 
@@ -422,7 +433,7 @@ def _acquire(
             )
         with console.status("Acquiring app and fetching download URLs..."):
             delivery_token = purchase(package, vc, auth)
-            delivery = get_delivery(package, vc, auth, delivery_token)
+            delivery = get_delivery(package, vc, auth, delivery_token, locales)
         return details, vc, delivery
 
     def retry_with(profiles):

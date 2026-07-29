@@ -11,6 +11,7 @@ gplaydl downloads through a Google account you add yourself in the Authenticator
   versions Google only serves to certain devices
 - Compressed transfers when Google Play offers them (often 30-40% smaller)
 - Every APK verified against the SHA-256 Google Play declares for it
+- Language splits on demand, and re-runs fetch only what is missing
 - Pure-Python protobuf decoding, no `gpapi` dependency
 - Live progress bars, plus `search`, `info` and `list-splits` for browsing
 
@@ -99,6 +100,7 @@ gplaydl download com.whatsapp -a arm64,armv7 # several architectures at once
 gplaydl download org.videolan.vlc -a x86_64  # emulator / desktop build
 gplaydl download com.google.android.katniss -a tv  # Android TV build
 gplaydl download com.whatsapp -v 231205015   # specific version code
+gplaydl download com.whatsapp -l de,fr,zh-CN # extra language splits
 gplaydl download com.whatsapp --no-splits    # skip split APKs
 gplaydl download com.whatsapp --no-extras    # skip OBB / asset packs
 gplaydl download com.whatsapp --dm           # also fetch the .dm metadata
@@ -108,6 +110,12 @@ Downloads are verified: the base APK and every split are hashed while they
 stream in and checked against the SHA-256 that Google Play declares in the
 delivery response, so a truncated or corrupted file fails loudly instead of
 failing later at install time.
+
+Re-runs are incremental. A file that already exists and matches its declared
+hash is skipped, so running the same command again with an extra
+architecture (`-a arm64,armv7`) or more languages (`-l de,fr`) downloads
+only the missing splits into the same directory -- and a corrupted file is
+noticed and fetched again.
 
 `--dm` additionally fetches the DEX metadata file (`{package}-{vc}.dm`, a
 baseline profile plus vdex) that the Play Store installs alongside the base

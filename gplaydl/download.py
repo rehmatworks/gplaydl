@@ -60,6 +60,15 @@ def _b64_digest(hasher) -> str:
     return base64.urlsafe_b64encode(hasher.digest()).decode().rstrip("=")
 
 
+def _file_digest(path: Path, sha256: bool) -> str:
+    """Hash an existing file, returning the Play-style base64url digest."""
+    hasher = hashlib.sha256() if sha256 else hashlib.sha1()
+    with open(path, "rb") as f:
+        while chunk := f.read(1024 * 1024):
+            hasher.update(chunk)
+    return _b64_digest(hasher)
+
+
 async def _download_one(
     spec: DownloadSpec,
     client: httpx.AsyncClient,
@@ -74,6 +83,23 @@ async def _download_one(
             headers["Cookie"] = "; ".join(parts)
 
         label = spec.label or spec.dest.name
+
+        # Skip files that are already present and verify against the digest
+        # Play declared -- this is what makes re-runs (e.g. to add another
+        # architecture or language) download only what is missing.
+        expected = (spec.sha256 or spec.sha1).rstrip("=")
+        if expected and spec.dest.exists():
+            digest = await asyncio.to_thread(
+                _file_digest, spec.dest, bool(spec.sha256),
+            )
+            if digest == expected:
+                size = spec.dest.stat().st_size
+                progress.add_task(
+                    "download", filename=f"{label} [dim](already downloaded)[/dim]",
+                    total=size, completed=size,
+                )
+                return spec.dest
+
         task_id = progress.add_task("download", filename=label, total=None)
 
         decompressor = (
