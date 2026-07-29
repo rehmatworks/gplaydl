@@ -59,6 +59,18 @@ def main(
     """Download APKs from the Google Play Store."""
 
 
+# ── link ────────────────────────────────────────────────────────────────────
+
+
+@app.command()
+def link(
+    dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Dispenser to link with."),
+    code: Optional[str] = typer.Option(None, "--code", help="Pairing code from the Authenticator app."),
+) -> None:
+    """Link this machine to the dispenser with a pairing code."""
+    run_link(console, dispenser_base(dispenser), code)
+
+
 # ── auth ────────────────────────────────────────────────────────────────────
 
 
@@ -100,18 +112,6 @@ def auth(
         f"Saved  : {path}",
         title="Token",
     ))
-
-
-# ── link ────────────────────────────────────────────────────────────────────
-
-
-@app.command()
-def link(
-    dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Dispenser to link with."),
-    code: Optional[str] = typer.Option(None, "--code", help="Pairing code from the Authenticator app."),
-) -> None:
-    """Link this machine to the dispenser with a pairing code."""
-    run_link(console, dispenser_base(dispenser), code)
 
 
 # ── info ────────────────────────────────────────────────────────────────────
