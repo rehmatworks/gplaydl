@@ -98,7 +98,8 @@ def link(
     path = save_link(base, api_key)
     console.print(
         f"\n[bold green]Linked.[/bold green] This machine can now download "
-        f"through {base}.\n[dim]Key saved to {path}[/dim]\n"
+        f"through {base}, and you will not need to set this up again.\n"
+        f"[dim]Key saved to {path}[/dim]\n"
     )
 
 
@@ -128,14 +129,14 @@ def _label() -> str:
 
 def _walkthrough_panel(console: Console, base: str, first_run: bool) -> Panel:
     intro = (
-        "gplaydl downloads through a Google account you add yourself. "
-        "Setting up takes a spare account and about two minutes:"
+        "gplaydl downloads through a Google account you add yourself. This is a "
+        "one-time setup for this machine and takes about two minutes:"
         if first_run
         else "Linking replaces any key this machine already holds:"
     )
     return Panel(
         Group(intro, "", _steps_table(base)),
-        title="[bold]Set up gplaydl[/bold]" if first_run else "[bold]Link gplaydl[/bold]",
+        title="[bold]Set up gplaydl (One-time)[/bold]" if first_run else "[bold]Link gplaydl[/bold]",
         title_align="left",
         border_style="bright_black",
         box=box.ROUNDED,
