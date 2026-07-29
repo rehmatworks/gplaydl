@@ -2,10 +2,10 @@
 
 Download APKs from Google Play right from your terminal. One command gets you the base APK, split APKs (App Bundles), OBB expansion files and Play Asset Delivery packs.
 
-Downloads run on a community pool of Google accounts that gplaydl users share, so your own accounts stay out of it. Everyone who uses the pool puts one spare account in. That is the whole deal, and setting it up takes about two minutes.
+gplaydl downloads through a Google account you add yourself in the Authenticator app. Your account stays private to you, and setup takes about two minutes.
 
 - Base APK, splits, OBB files and asset packs downloaded together by default
-- Community-pooled authentication: downloads never touch your personal account
+- Signs in with your own account, kept private to you and never shared
 - 23 device profiles, rotated automatically so authentication keeps working
 - Pure-Python protobuf decoding, no `gpapi` dependency
 - Live progress bars, plus `search`, `info` and `list-splits` for browsing
@@ -27,27 +27,23 @@ pip install .
 
 ## First-time setup
 
-You will need any Android phone for a couple of minutes, and a Google account to add.
+You will need any Android phone for a couple of minutes, and a spare Google account to add.
 
 1. Install the [gplaydl Authenticator](https://dispenser.gplaydl.com) app ([source](https://github.com/rehmatworks/gplaydl-authenticator)) on the phone. It is not on Google Play, so Android will ask you to allow the install.
-2. Sign in with a Google account. Before each sign-in the app asks how the account may be used:
-   - **Community** puts it in the shared pool and unlocks pool downloads for you. Use a spare account you would not mind losing, never your main one: Google sometimes restricts accounts it sees on unofficial clients.
-   - **Private** keeps the account yours alone. Nobody else can ever use it, and you reach it with `--email` (see [purchased apps](#downloading-your-own-purchased-apps) below).
+2. Sign in with a spare Google account. Prefer a throwaway over your main one: Google sometimes restricts accounts it sees on unofficial clients. The account stays private to you and is never shared with anyone.
 3. Open **Link gplaydl** in the app, then run this on your computer and type in the code it shows:
 
 ```bash
 gplaydl link
 ```
 
-Done. If you shared a Community account, every download now works, and your account serves other people's downloads the same way theirs serve yours:
+Done. Every download now goes through your own account:
 
 ```bash
 gplaydl download com.whatsapp
 ```
 
-If you kept everything private, downloads work too, just always through your own accounts: pass `--email` with the address you added. The shared pool stays locked until there is a Community account behind your key.
-
-Your Google password and 2FA codes never leave the phone; the app uploads only the resulting Play token. You can flip an account between Community and Private or delete it in the app whenever you like, and if you skip `gplaydl link`, the first command that needs it will walk you through the same steps.
+Your Google password and 2FA codes never leave the phone; the app uploads only the resulting Play token. You can remove an account in the app whenever you like, and if you skip `gplaydl link`, the first command that needs it will walk you through the same steps.
 
 ## Quick start
 
@@ -71,6 +67,8 @@ gplaydl link -d https://your.dispenser    # link to a self-hosted dispenser
 ```
 
 The key lands in `~/.config/gplaydl/config.json`. For containers and CI, set `GPLAYDL_API_KEY` instead of linking interactively.
+
+If you added more than one account in the app, pass `--email you@gmail.com` on `auth` or `download` to use a specific one. Without it, gplaydl rotates through the accounts you added.
 
 ### `auth`
 
@@ -114,19 +112,19 @@ gplaydl search "file manager" --limit 5   # find apps by name
 gplaydl list-splits com.whatsapp          # see splits without downloading
 ```
 
-## Downloading your own purchased apps
+## Multiple accounts and purchased apps
 
-The community pool only knows free apps. To download something tied to one of your own accounts, add that account in the Authenticator app and choose **Private**, then pin it by address:
+You can add several accounts in the app. By default gplaydl rotates through them; pass `--email` to pick one, which is also how you download apps tied to a specific account:
 
 ```bash
 gplaydl download com.example.paid --email you@gmail.com
 ```
 
-A private account is never handed to anyone else; only you can pin it, and only with your key. Be aware of the risk before adding an account you care about: Google can rate-limit, lock, or restrict accounts it sees on unofficial clients. It is uncommon, but it happens, and it is why the shared pool runs on throwaway accounts.
+A word of caution before adding an account you care about: Google can rate-limit, lock, or restrict accounts it sees on unofficial clients. It is uncommon, but it happens, which is why a throwaway account is the safer choice.
 
 ## Self-hosting
 
-The dispenser is open source and runs anywhere Go and Postgres do. Host your own pool for a team or just for yourself:
+The dispenser is open source and runs anywhere Go and Postgres do. Host your own for a team or just for yourself:
 
 1. Follow the [dispenser deployment guide](https://github.com/rehmatworks/gplaydl-dispenser).
 2. In the Authenticator app, point **Settings → Server** at your instance and add accounts.
@@ -141,14 +139,14 @@ The dispenser is open source and runs anywhere Go and Postgres do. Host your own
 
 ## How it works
 
-1. **Authenticate.** The dispenser mints a Play token from a pooled account and hands it back, trying device profiles in turn until one is accepted.
+1. **Authenticate.** The dispenser mints a Play token from one of your own accounts and hands it back, trying device profiles in turn until one is accepted.
 2. **Look up.** App metadata (version, size, split list) comes from Google Play's protobuf API.
 3. **Purchase.** Free apps are "purchased" to authorise the download.
 4. **Download.** Base APK, splits, OBB files and asset packs stream in parallel from Google's CDN.
 
-## Upgrading from 2.x
+## Upgrading from 3.x
 
-gplaydl 3 switched from Aurora Store's public token dispenser to [its own](https://dispenser.gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-dispenser)), stocked entirely by its users. Run `gplaydl link` once after upgrading and you are set.
+gplaydl 4 drops the shared community pool: downloads now go through a Google account you add yourself, kept private to you. Add an account in the Authenticator app and run `gplaydl link` once after upgrading. (Older 2.x releases borrowed anonymous tokens from Aurora Store; that path is gone.)
 
 ## License
 

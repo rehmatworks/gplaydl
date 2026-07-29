@@ -37,9 +37,8 @@ class DispenserError(Exception):
 def normalize_dispenser(url: str) -> str:
     """Reduce a dispenser URL to its base.
 
-    Both this project's dispenser and Aurora's serve tokens at /api/auth, and
-    people have historically passed the full endpoint to -d. Either spelling
-    should mean the same server.
+    Dispensers serve tokens at /api/auth, and people often pass the full
+    endpoint to -d. The base and the full endpoint should mean the same server.
     """
     url = url.strip().rstrip("/")
     if url.endswith("/api/auth"):
@@ -131,9 +130,9 @@ def fetch_token(
     """Obtain an auth token from the dispenser.
 
     Rotates through device profiles until one yields an authToken. Refusals
-    that no other profile can fix (bad key, nothing contributed, unknown
-    email) raise DispenserError with the server's own explanation instead.
-    Returns the full auth dict on success, None when every profile failed.
+    that no other profile can fix (bad key, no accounts, unknown email) raise
+    DispenserError with the server's own explanation instead. Returns the full
+    auth dict on success, None when every profile failed.
     """
     base = dispenser_base(dispenser_url)
     url = base + "/api/auth"

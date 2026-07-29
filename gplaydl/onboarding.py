@@ -1,7 +1,7 @@
 """First-run setup: linking this machine to a dispenser.
 
-The community pool only holds what people put in, so downloading starts with
-sharing a spare account through the Authenticator app. Linking hands this
+gplaydl downloads through Google accounts you add yourself in the Authenticator
+app, so setup is: add an account, then link this machine. Linking hands this
 machine an API key in exchange for the one-time pairing code the app shows.
 """
 
@@ -128,8 +128,8 @@ def _label() -> str:
 
 def _walkthrough_panel(console: Console, base: str, first_run: bool) -> Panel:
     intro = (
-        "gplaydl downloads with Google accounts that its own users share. "
-        "Setting up takes a Google account and about two minutes:"
+        "gplaydl downloads through a Google account you add yourself. "
+        "Setting up takes a spare account and about two minutes:"
         if first_run
         else "Linking replaces any key this machine already holds:"
     )
@@ -149,7 +149,7 @@ def _steps_table(base: str) -> Table:
     steps.add_column(style="bold cyan", justify="right", width=1)
     steps.add_column()
     steps.add_row("1", f"Install the Authenticator app on any Android phone: [bold cyan]{base}[/bold cyan]")
-    steps.add_row("2", "Sign in with a Google account. Community shares it with the pool and unlocks pool downloads (use a spare account, never your main one). Private keeps it yours alone, reached with --email.")
+    steps.add_row("2", "Sign in with a spare Google account. It stays private to you; add more than one and pick between them later with --email.")
     steps.add_row("3", "Open [bold]Link gplaydl[/bold] in the app and type the code here.")
     return steps
 
@@ -157,8 +157,7 @@ def _steps_table(base: str) -> Table:
 def _steps_text(base: str) -> str:
     return (
         f"  1. Install the Authenticator app on any Android phone: {base}\n"
-        "  2. Sign in with a Google account: Community joins the pool,\n"
-        "     Private stays yours alone (reached with --email).\n"
+        "  2. Sign in with a spare Google account (it stays private to you).\n"
         "  3. Open Link gplaydl in the app and run gplaydl link with the code."
     )
 

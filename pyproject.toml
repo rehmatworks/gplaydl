@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "gplaydl"
 version = "0.0.0"
-description = "Download APKs from Google Play using a community pool of shared accounts"
+description = "Download APKs from Google Play using your own linked Google accounts"
 readme = "readme.md"
 license = "MIT"
 requires-python = ">=3.9"

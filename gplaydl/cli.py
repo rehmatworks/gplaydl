@@ -37,7 +37,7 @@ err = Console(stderr=True)
 
 app = typer.Typer(
     name="gplaydl",
-    help="Download APKs from Google Play using a community pool of shared accounts.",
+    help="Download APKs from Google Play using your own linked Google accounts.",
     add_completion=False,
     no_args_is_help=True,
 )
@@ -66,7 +66,7 @@ def main(
 def auth(
     arch: str = typer.Option("arm64", help="Architecture: arm64 or armv7."),
     dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Custom dispenser URL."),
-    email: Optional[str] = typer.Option(None, "--email", "-e", help="Use one of your own accounts by its address."),
+    email: Optional[str] = typer.Option(None, "--email", "-e", help="Pick a specific account by address when you linked several."),
     clear: bool = typer.Option(False, "--clear", help="Remove all cached tokens."),
 ) -> None:
     """Get an auth token from the dispenser."""
@@ -232,7 +232,7 @@ def download(
     arch: str = typer.Option("arm64", "--arch", "-a", help="Architecture: arm64 or armv7."),
     version: Optional[int] = typer.Option(None, "--version", "-v", help="Specific version code."),
     dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Custom dispenser URL."),
-    email: Optional[str] = typer.Option(None, "--email", "-e", help="Use one of your own accounts by its address."),
+    email: Optional[str] = typer.Option(None, "--email", "-e", help="Pick a specific account by address when you linked several."),
     no_splits: bool = typer.Option(False, "--no-splits", help="Skip downloading split APKs."),
     no_extras: bool = typer.Option(False, "--no-extras", help="Skip downloading additional files (OBB, asset packs)."),
 ) -> None:
