@@ -5,8 +5,11 @@ Download APKs from Google Play right from your terminal. One command gets you th
 gplaydl downloads through a Google account you add yourself in the Authenticator app. Your account stays private to you, and setup takes about two minutes.
 
 - Base APK, splits, OBB files and asset packs downloaded together by default
+- arm64, armv7, x86, x86_64 and Android TV builds, several in one command
 - Signs in with your own account, kept private to you and never shared
-- 23 device profiles, rotated automatically so authentication keeps working
+- Device profiles rotated automatically, both for authentication and for old
+  versions Google only serves to certain devices
+- Compressed transfers when Google Play offers them (often 30-40% smaller)
 - Pure-Python protobuf decoding, no `gpapi` dependency
 - Live progress bars, plus `search`, `info` and `list-splits` for browsing
 
@@ -77,6 +80,7 @@ Gets a Play token and caches it. You rarely need to run this yourself; the other
 ```bash
 gplaydl auth                              # default (arm64)
 gplaydl auth --arch armv7                 # older 32-bit devices
+gplaydl auth --arch x86_64                # emulators / desktop
 gplaydl auth --clear                      # forget all cached tokens
 ```
 
@@ -90,10 +94,26 @@ Fetches the base APK, every split APK, and any extra files unless you opt out.
 gplaydl download com.whatsapp                # everything
 gplaydl download com.whatsapp -o ./apks      # custom output directory
 gplaydl download com.whatsapp -a armv7       # ARMv7 build
+gplaydl download com.whatsapp -a arm64,armv7 # several architectures at once
+gplaydl download org.videolan.vlc -a x86_64  # emulator / desktop build
+gplaydl download com.google.android.katniss -a tv  # Android TV build
 gplaydl download com.whatsapp -v 231205015   # specific version code
 gplaydl download com.whatsapp --no-splits    # skip split APKs
 gplaydl download com.whatsapp --no-extras    # skip OBB / asset packs
 ```
+
+Old version codes are served by Google only to devices it considers
+compatible: 32-bit-only APKs are refused for 64-bit-only profiles, and
+Android 14+ profiles are not served APKs targeting very old SDKs. When that
+happens, gplaydl retries automatically with low-SDK multi-ABI device profiles
+until Google agrees to deliver.
+
+Apps that are invisible to phone profiles altogether (Android TV exclusives
+like `com.google.android.katniss`, or apps limited to one ABI family) are
+found the same way: gplaydl rotates through one device of each kind — TV,
+then each ABI family — before giving up. Pass `-a tv` to skip straight to a
+TV profile, or run `gplaydl auth --arch tv` if you just want a TV token
+(`~/.config/gplaydl/auth-tv.json`).
 
 | Type | Naming | Example |
 |------|--------|---------|
@@ -136,13 +156,20 @@ The dispenser is open source and runs anywhere Go and Postgres do. Host your own
 |------|-----|---------|
 | `arm64` (default) | arm64-v8a | Modern phones (2017+) |
 | `armv7` | armeabi-v7a | Older 32-bit phones |
+| `x86_64` | x86_64 | Emulators, Chromebooks, desktop |
+| `x86` | x86 | Older 32-bit emulators |
+| `tv` | armeabi-v7a | Android TV / Google TV devices |
+
+Pass several at once to `download` with a comma: `-a arm64,armv7`. The base
+APK is shared where possible and per-architecture splits (or separate builds,
+for apps that publish one APK per ABI) land next to each other.
 
 ## How it works
 
 1. **Authenticate.** The dispenser mints a Play token from one of your own accounts and hands it back, trying device profiles in turn until one is accepted.
 2. **Look up.** App metadata (version, size, split list) comes from Google Play's protobuf API.
-3. **Purchase.** Free apps are "purchased" to authorise the download.
-4. **Download.** Base APK, splits, OBB files and asset packs stream in parallel from Google's CDN.
+3. **Purchase.** Free apps are "purchased" to authorise the download; the delivery token Google returns is passed along to the delivery endpoint.
+4. **Download.** Base APK, splits, OBB files and asset packs stream in parallel from Google's CDN, using gzip-compressed transfers when offered.
 
 ## Upgrading from 3.x
 

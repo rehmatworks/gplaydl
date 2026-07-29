@@ -13,6 +13,8 @@ from rich.table import Table
 
 from gplaydl import __version__
 from gplaydl.api import (
+    AppNotAvailableError,
+    AppNotSupportedError,
     AuthExpiredError,
     PlayAPIError,
     get_delivery,
@@ -27,10 +29,15 @@ from gplaydl.auth import (
     dispenser_base,
     ensure_auth,
     fetch_token,
+    fetch_token_for_profile,
     save_auth,
 )
 from gplaydl.download import DownloadSpec, download_batch
 from gplaydl.onboarding import ensure_linked, link as run_link
+from gplaydl.profiles import ABI_TOKENS, get_compat_profiles, get_discovery_profiles
+
+VALID_ARCHS = tuple(ABI_TOKENS) + ("tv",)  # arm64, armv7, x86, x86_64, tv
+MAX_COMPAT_RETRIES = 6
 
 console = Console()
 err = Console(stderr=True)
@@ -76,7 +83,7 @@ def link(
 
 @app.command()
 def auth(
-    arch: str = typer.Option("arm64", help="Architecture: arm64 or armv7."),
+    arch: str = typer.Option("arm64", help="Device type: arm64, armv7, x86, x86_64 or tv."),
     dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Custom dispenser URL."),
     email: Optional[str] = typer.Option(None, "--email", "-e", help="Pick a specific account by address when you linked several."),
     clear: bool = typer.Option(False, "--clear", help="Remove all cached tokens."),
@@ -229,7 +236,11 @@ def list_splits_cmd(
 def download(
     package: str = typer.Argument(..., help="Package name (e.g. com.whatsapp)."),
     output: Path = typer.Option(".", "--output", "-o", help="Output directory."),
-    arch: str = typer.Option("arm64", "--arch", "-a", help="Architecture: arm64 or armv7."),
+    arch: str = typer.Option(
+        "arm64", "--arch", "-a",
+        help="Device type: arm64, armv7, x86, x86_64 or tv (Android TV). "
+             "Comma-separate to download several at once (e.g. arm64,armv7).",
+    ),
     version: Optional[int] = typer.Option(None, "--version", "-v", help="Specific version code."),
     dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Custom dispenser URL."),
     email: Optional[str] = typer.Option(None, "--email", "-e", help="Pick a specific account by address when you linked several."),
@@ -237,67 +248,104 @@ def download(
     no_extras: bool = typer.Option(False, "--no-extras", help="Skip downloading additional files (OBB, asset packs)."),
 ) -> None:
     """Download an APK (with splits + additional files) from Google Play."""
-    auth_data = _require_auth(arch, dispenser, email=email)
-    output.mkdir(parents=True, exist_ok=True)
-
-    # ── details + purchase + delivery (with auto-retry on expired token) ─
-    try:
-        try:
-            with console.status(f"Fetching details for [bold]{package}[/bold]..."):
-                details = get_details(package, auth_data)
-            vc = version or details.version_code
-            with console.status("Acquiring app and fetching download URLs..."):
-                purchase(package, vc, auth_data)
-                delivery = get_delivery(package, vc, auth_data)
-        except AuthExpiredError:
-            auth_data = _require_auth(arch, dispenser, force=True, email=email)
-            with console.status(f"Fetching details for [bold]{package}[/bold]..."):
-                details = get_details(package, auth_data)
-            vc = version or details.version_code
-            with console.status("Acquiring app and fetching download URLs..."):
-                purchase(package, vc, auth_data)
-                delivery = get_delivery(package, vc, auth_data)
-    except PlayAPIError as exc:
-        err.print(f"[red]{exc}[/red]")
+    archs = [a.strip() for a in arch.split(",") if a.strip()]
+    bad = [a for a in archs if a not in VALID_ARCHS]
+    if bad:
+        err.print(
+            f"[red]Unknown architecture: {', '.join(bad)}. "
+            f"Choose from {', '.join(VALID_ARCHS)}.[/red]"
+        )
         raise typer.Exit(code=1)
 
-    rprint(Panel.fit(
-        f"[bold]{details.title}[/bold]\n"
-        f"{details.version_string}  (vc {vc})",
-        title=package,
-    ))
+    output.mkdir(parents=True, exist_ok=True)
 
-    # ── build download specs ────────────────────────────────────────────
-    base_name = f"{package}-{vc}.apk"
-    base_path = output / base_name
-    base_spec = DownloadSpec(
-        url=delivery.download_url, dest=base_path,
-        cookies=delivery.cookies, label=base_name,
-    )
+    specs: dict[str, DownloadSpec] = {}       # dest filename -> spec
+    expected: dict[str, int] = {}             # dest filename -> expected bytes
+    shown_panel = False
+    any_splits = False
 
-    extras: list[DownloadSpec] = []
-    if delivery.splits and not no_splits:
-        for split in delivery.splits:
-            name = f"{package}-{vc}-{split.name}.apk"
-            extras.append(DownloadSpec(url=split.url, dest=output / name, label=name))
-    if not no_extras and delivery.additional_files:
-        for af in delivery.additional_files:
-            if af.is_asset_pack:
-                name = f"{package}-{vc}-{af.type_label}{af.extension}"
+    for arch_item in archs:
+        auth_data = _require_auth(arch_item, dispenser, email=email)
+        try:
+            details, vc, delivery = _acquire(
+                package, version, arch_item, auth_data, dispenser, email,
+            )
+        except PlayAPIError as exc:
+            if len(archs) > 1:
+                # Keep going: the other architectures may still be available.
+                err.print(f"[yellow]{arch_item}: {exc}[/yellow]")
+                continue
+            err.print(f"[red]{exc}[/red]")
+            raise typer.Exit(code=1)
+
+        if not shown_panel:
+            if vc == details.version_code and details.version_string:
+                ver_line = f"{details.version_string}  (vc {vc})"
             else:
-                name = f"{af.type_label}.{af.version_code}.{package}{af.extension}"
-            extras.append(DownloadSpec(
-                url=af.url, dest=output / name, cookies=af.cookies,
-                label=name, gzipped=af.gzipped,
+                ver_line = f"vc {vc}"  # pinned to an older version
+            rprint(Panel.fit(
+                f"[bold]{details.title}[/bold]\n{ver_line}",
+                title=package,
             ))
+            shown_panel = True
+        elif len(archs) > 1:
+            rprint(f"[dim]{arch_item}: vc {vc}[/dim]")
 
-    all_specs = [base_spec] + extras
+        # ── base APK (prefer the gzipped transfer when Play offers it) ──
+        base_name = f"{package}-{vc}.apk"
+        if base_name not in specs:
+            use_gzip = bool(delivery.gzipped_url and delivery.gzipped_size)
+            specs[base_name] = DownloadSpec(
+                url=delivery.gzipped_url if use_gzip else delivery.download_url,
+                dest=output / base_name,
+                cookies=delivery.cookies,
+                label=base_name,
+                gzipped=use_gzip,
+            )
+            expected[base_name] = (
+                delivery.gzipped_size if use_gzip else delivery.download_size
+            )
+
+        if delivery.splits and not no_splits:
+            any_splits = True
+            for split in delivery.splits:
+                name = f"{package}-{vc}-{split.name}.apk"
+                if name in specs:
+                    continue
+                use_gzip = bool(split.gzipped_url and split.gzipped_size)
+                specs[name] = DownloadSpec(
+                    url=split.gzipped_url if use_gzip else split.url,
+                    dest=output / name,
+                    label=name,
+                    gzipped=use_gzip,
+                )
+                expected[name] = split.gzipped_size if use_gzip else split.size
+
+        if not no_extras and delivery.additional_files:
+            for af in delivery.additional_files:
+                if af.is_asset_pack:
+                    name = f"{package}-{vc}-{af.type_label}{af.extension}"
+                else:
+                    name = f"{af.type_label}.{af.version_code}.{package}{af.extension}"
+                if name in specs:
+                    continue
+                specs[name] = DownloadSpec(
+                    url=af.url, dest=output / name, cookies=af.cookies,
+                    label=name, gzipped=af.gzipped,
+                )
+                expected[name] = af.size
+
+    # ── download ─────────────────────────────────────────────────────────
+    all_specs = list(specs.values())
+    if not all_specs:
+        err.print("[red]Nothing to download: no architecture yielded files.[/red]")
+        raise typer.Exit(code=1)
     total_files = len(all_specs)
-    total_size = delivery.download_size + sum(s.size for s in delivery.splits if not no_splits)
-    if not no_extras:
-        total_size += sum(af.size for af in delivery.additional_files)
     file_label = f"{total_files} file{'s' if total_files > 1 else ''}"
-    rprint(f"\n[bold]Downloading {file_label}[/bold]  [dim]({_fmt(total_size)})[/dim]")
+    rprint(
+        f"\n[bold]Downloading {file_label}[/bold]  "
+        f"[dim]({_fmt(sum(expected.values()))} to transfer)[/dim]"
+    )
     download_batch(all_specs)
 
     # ── summary ──────────────────────────────────────────────────────────
@@ -305,27 +353,12 @@ def download(
     files_table = Table(title="Downloaded files", show_header=True)
     files_table.add_column("File", style="bold")
     files_table.add_column("Size", justify="right")
-    files_table.add_row(base_name, _fmt(base_path.stat().st_size))
-
-    if delivery.splits and not no_splits:
-        for split in delivery.splits:
-            sp = output / f"{package}-{vc}-{split.name}.apk"
-            if sp.exists():
-                files_table.add_row(sp.name, _fmt(sp.stat().st_size))
-
-    if not no_extras and delivery.additional_files:
-        for af in delivery.additional_files:
-            if af.is_asset_pack:
-                fname = f"{package}-{vc}-{af.type_label}{af.extension}"
-            else:
-                fname = f"{af.type_label}.{af.version_code}.{package}{af.extension}"
-            ap = output / fname
-            if ap.exists():
-                files_table.add_row(ap.name, _fmt(ap.stat().st_size))
-
+    for spec in all_specs:
+        if spec.dest.exists():
+            files_table.add_row(spec.dest.name, _fmt(spec.dest.stat().st_size))
     console.print(files_table)
 
-    if delivery.splits and not no_splits:
+    if any_splits:
         rprint(
             "\n[dim]Tip: install split APKs to a device with "
             "[bold]adb install-multiple *.apk[/bold][/dim]"
@@ -335,6 +368,83 @@ def download(
 
 
 # ── helpers ─────────────────────────────────────────────────────────────────
+
+
+def _acquire(
+    package: str,
+    version: Optional[int],
+    arch: str,
+    auth_data: dict,
+    dispenser: Optional[str],
+    email: Optional[str],
+):
+    """Details + purchase + delivery, with token refresh and profile fallback.
+
+    Returns (details, version_code, delivery). When Google refuses to serve
+    the version to the current device profile (common for old versions),
+    retries with profiles ordered for compatibility: low SDK, many ABIs.
+    """
+    def flow(auth: dict):
+        with console.status(f"Fetching details for [bold]{package}[/bold] ({arch})..."):
+            details = get_details(package, auth)
+        vc = version or details.version_code
+        if not vc:
+            raise AppNotAvailableError(
+                f"{package} has no version available for the {arch} "
+                "device profile."
+            )
+        with console.status("Acquiring app and fetching download URLs..."):
+            delivery_token = purchase(package, vc, auth)
+            delivery = get_delivery(package, vc, auth, delivery_token)
+        return details, vc, delivery
+
+    def retry_with(profiles):
+        """Re-run the flow with freshly minted tokens for other profiles."""
+        for key, profile in profiles:
+            device = profile.get("UserReadableName", key)
+            try:
+                with console.status(f"Trying device profile [bold]{device}[/bold]..."):
+                    retry_auth = fetch_token_for_profile(
+                        profile, dispenser_url=dispenser, email=email,
+                    )
+                if not retry_auth:
+                    continue
+                result = flow(retry_auth)
+                rprint(f"[dim]Served with device profile: {device}[/dim]")
+                return result
+            except (PlayAPIError, DispenserError):
+                continue
+        return None
+
+    try:
+        try:
+            return flow(auth_data)
+        except AuthExpiredError:
+            auth_data = _require_auth(arch, dispenser, force=True, email=email)
+            return flow(auth_data)
+    except AppNotAvailableError as exc:
+        # Invisible to this device: maybe a form-factor exclusive (Android
+        # TV) or limited to another ABI family. Try one device of each kind.
+        rprint(
+            "[yellow]Not visible to the current device profile; trying "
+            "other device types (TV, other ABIs)...[/yellow]"
+        )
+        result = retry_with(get_discovery_profiles(arch))
+        if result:
+            return result
+        raise AppNotAvailableError(
+            f"{package} was not served to any device profile. It may not "
+            "exist, or it may be paid or unavailable in the account's region."
+        ) from exc
+    except AppNotSupportedError as exc:
+        rprint(
+            "[yellow]This version is not served to the default device "
+            "profile; retrying with compatible profiles...[/yellow]"
+        )
+        result = retry_with(get_compat_profiles(arch)[:MAX_COMPAT_RETRIES])
+        if result:
+            return result
+        raise exc
 
 
 def _require_auth(
@@ -373,11 +483,12 @@ def _print_dispenser_error(exc: DispenserError, dispenser: Optional[str]) -> Non
 
 
 def _fmt(size_bytes: int | float) -> str:
-    """Format bytes as a human-readable string."""
+    """Format bytes as a human-readable string (decimal units, like the
+    progress bars, so the summary matches what was shown while downloading)."""
     if not size_bytes:
         return "Unknown"
     for unit in ("B", "KB", "MB", "GB"):
-        if size_bytes < 1024:
+        if size_bytes < 1000:
             return f"{size_bytes:.1f} {unit}"
-        size_bytes /= 1024
+        size_bytes /= 1000
     return f"{size_bytes:.1f} TB"

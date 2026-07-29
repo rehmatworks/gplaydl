@@ -122,18 +122,11 @@ def clear_auth() -> None:
             f.unlink(missing_ok=True)
 
 
-def fetch_token(
-    dispenser_url: Optional[str] = None,
-    arch: str = "arm64",
-    email: Optional[str] = None,
-) -> Optional[dict]:
-    """Obtain an auth token from the dispenser.
-
-    Rotates through device profiles until one yields an authToken. Refusals
-    that no other profile can fix (bad key, no accounts, unknown email) raise
-    DispenserError with the server's own explanation instead. Returns the full
-    auth dict on success, None when every profile failed.
-    """
+def _dispenser_request(
+    dispenser_url: Optional[str],
+    email: Optional[str],
+) -> tuple[str, dict, Optional[dict]]:
+    """Build (url, headers, params) for a dispenser token request."""
     base = dispenser_base(dispenser_url)
     url = base + "/api/auth"
     headers = {
@@ -143,30 +136,74 @@ def fetch_token(
     if key := api_key_for(base):
         headers["X-Api-Key"] = key
     params = {"email": email} if email else None
+    return url, headers, params
+
+
+def _request_token(
+    url: str, headers: dict, params: Optional[dict], profile: dict,
+) -> Optional[dict]:
+    """POST one device profile to the dispenser.
+
+    Returns the auth dict, or None when this profile was not accepted.
+    Refusals that no other profile can fix (bad key, no accounts, unknown
+    email) raise DispenserError with the server's own explanation instead.
+    """
+    try:
+        resp = httpx.post(url, json=profile, headers=headers,
+                          params=params, timeout=30)
+    except Exception:
+        return None
+    if resp.status_code == 200:
+        data = resp.json()
+        if data.get("authToken"):
+            return data
+        return None
+    if resp.status_code in (401, 403, 404, 503):
+        # Another device profile cannot change who we are or what we have
+        # shared, so pass the dispenser's explanation straight up.
+        raise DispenserError(resp.status_code, _server_message(resp))
+    return None
+
+
+def fetch_token(
+    dispenser_url: Optional[str] = None,
+    arch: str = "arm64",
+    email: Optional[str] = None,
+) -> Optional[dict]:
+    """Obtain an auth token from the dispenser.
+
+    Rotates through device profiles until one yields an authToken. Returns
+    the full auth dict on success, None when every profile failed.
+    """
+    url, headers, params = _dispenser_request(dispenser_url, email)
 
     profiles = get_priority_profiles(arch)
     if not profiles:
         profiles = [("fallback", FALLBACK_PROFILE)]
 
     for profile_name, profile in profiles:
-        device = profile.get("UserReadableName", profile_name)
-        try:
-            resp = httpx.post(url, json=profile, headers=headers,
-                              params=params, timeout=30)
-        except Exception:
-            continue
-        if resp.status_code == 200:
-            data = resp.json()
-            if data.get("authToken"):
-                console.print(f"  Authenticated with profile: [bold]{device}[/bold]")
-                return data
-            continue
-        if resp.status_code in (401, 403, 404, 503):
-            # Another device profile cannot change who we are or what we have
-            # shared, so pass the dispenser's explanation straight up.
-            raise DispenserError(resp.status_code, _server_message(resp))
+        data = _request_token(url, headers, params, profile)
+        if data:
+            device = profile.get("UserReadableName", profile_name)
+            console.print(f"  Authenticated with profile: [bold]{device}[/bold]")
+            return data
 
     return None
+
+
+def fetch_token_for_profile(
+    profile: dict,
+    dispenser_url: Optional[str] = None,
+    email: Optional[str] = None,
+) -> Optional[dict]:
+    """Obtain an auth token for one specific device profile.
+
+    Used when a download needs a device Google considers compatible with a
+    particular (usually old) app version. The token is not cached; it is
+    minted for this one download.
+    """
+    url, headers, params = _dispenser_request(dispenser_url, email)
+    return _request_token(url, headers, params, profile)
 
 
 def _server_message(resp: httpx.Response) -> str:

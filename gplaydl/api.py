@@ -46,6 +46,8 @@ class SplitInfo:
     name: str
     url: str = ""
     size: int = 0
+    gzipped_url: str = ""
+    gzipped_size: int = 0
 
 
 @dataclass
@@ -74,7 +76,10 @@ class AdditionalFile:
 class DeliveryResult:
     download_url: str = ""
     download_size: int = 0
+    gzipped_url: str = ""
+    gzipped_size: int = 0
     sha1: str = ""
+    sha256: str = ""
     cookies: list[dict] = field(default_factory=list)
     splits: list[SplitInfo] = field(default_factory=list)
     additional_files: list[AdditionalFile] = field(default_factory=list)
@@ -86,6 +91,22 @@ class PlayAPIError(Exception):
 
 class AuthExpiredError(PlayAPIError):
     """Raised when the API returns 401 and the token needs a refresh."""
+    pass
+
+
+class AppNotSupportedError(PlayAPIError):
+    """Delivery status 2: this version is not served to the current device profile."""
+    pass
+
+
+class AppNotAvailableError(PlayAPIError):
+    """The app is invisible to the current device profile (e.g. an Android
+    TV exclusive looked up as a phone), or does not exist at all."""
+    pass
+
+
+class AppNotPurchasedError(PlayAPIError):
+    """Delivery status 3: the account has not acquired this app."""
     pass
 
 
@@ -224,7 +245,7 @@ def get_details_proto(package: str, auth: dict) -> tuple[str, str, int, str]:
     """Fetch app details. Returns (docid, title, version_code, version_string)."""
     parsed = _parse_details_proto(_fetch_details_raw(package, auth))
     if not parsed.docid:
-        raise PlayAPIError("App not found or unavailable for this device profile.")
+        raise AppNotAvailableError("App not found or unavailable for this device profile.")
     return parsed.docid, parsed.title, parsed.version_code, parsed.version_string
 
 
@@ -232,7 +253,7 @@ def get_details(package: str, auth: dict) -> AppDetails:
     """Return structured app details."""
     parsed = _parse_details_proto(_fetch_details_raw(package, auth))
     if not parsed.docid:
-        raise PlayAPIError("App not found or unavailable for this device profile.")
+        raise AppNotAvailableError("App not found or unavailable for this device profile.")
     return AppDetails(
         package=parsed.docid or package,
         title=parsed.title,
@@ -248,29 +269,49 @@ def get_details(package: str, auth: dict) -> AppDetails:
 # ---------------------------------------------------------------------------
 # Purchase
 # ---------------------------------------------------------------------------
+# ResponseWrapper(1) -> Payload(4) -> BuyResponse
+# BuyResponse field 55 = encodedDeliveryToken, passed to delivery as "dtok".
 
-def purchase(package: str, version_code: int, auth: dict) -> None:
-    """Acquire a free app (equivalent of clicking 'Install')."""
+def purchase(package: str, version_code: int, auth: dict) -> str:
+    """Acquire a free app (equivalent of clicking 'Install').
+
+    Returns the delivery token Play hands back, or "" when there is none.
+    """
     headers = build_headers(auth)
     headers["Content-Type"] = "application/x-www-form-urlencoded"
     body = f"doc={package}&ot=1&vc={version_code}"
     resp = httpx.post(PURCHASE_URL, headers=headers, content=body, timeout=30)
+    if resp.status_code == 401:
+        raise AuthExpiredError("Auth token expired.")
     if resp.status_code not in (200, 204):
-        pass  # non-fatal; may already be "purchased"
+        return ""  # non-fatal; may already be "purchased"
+    buy_fields = _navigate(resp.content, 1, 4)
+    if not buy_fields:
+        return ""
+    return _first_string(buy_fields, 55)
 
 
 # ---------------------------------------------------------------------------
 # Delivery
 # ---------------------------------------------------------------------------
-# ResponseWrapper(1) -> Payload(21) -> DeliveryResponse(2) -> AppDeliveryData
+# ResponseWrapper(1) -> Payload(21) -> DeliveryResponse
+# DeliveryResponse: 1 = status (1=OK, 2=not compatible with device,
+#                   3=not purchased), 2 = AppDeliveryData
 # AppDeliveryData (field numbers from live probing):
-#   1  = downloadSize         (varint, bytes)
-#   2  = signature            (string)
+#   1  = downloadSize         (varint)
+#   2  = sha1                 (string)
 #   3  = downloadUrl          (string)
-#   4  = downloadAuthCookie   (repeated message: 1=name, 2=value)
-#   15 = splitDeliveryData    (repeated message: 1=name, 2=size, 5=downloadUrl)
-#   18 = additionalFile       (repeated message: 1=fileType, 2=size, 3=downloadUrl)
-#   29 = versionCode          (varint)
+#   4  = downloadAuthCookie / OBB metadata (repeated, see below)
+#   5  = downloadAuthCookie   (repeated message: 1=name, 2=value)
+#   13 = downloadUrlGzipped   (string)
+#   14 = downloadSizeGzipped  (varint)
+#   15 = splitDeliveryData    (repeated message: 1=name, 2=size,
+#          3=gzippedSize, 5=downloadUrl, 6=gzippedUrl,
+#          8=compressed variant {1=type, 2=size, 3=url})
+#   18 = compressedAppData    (message: 1=type(2=gzip), 2=size, 3=url)
+#          -> the BASE APK again, gzip-compressed. Not a separate file!
+#   19 = sha256               (string)
+#   29 = latest versionCode   (varint)
 
 def _parse_delivery(raw: bytes) -> DeliveryResult:
     """Parse a delivery response using ProtoDecoder."""
@@ -291,10 +332,35 @@ def _extract_delivery_from_fields(fields: list[tuple[int, int, Any]]) -> Deliver
     result = DeliveryResult(
         download_url=_first_string(fields, 3),
         download_size=_first_int(fields, 1) or 0,
-        sha1=_first_string(fields, 5),
+        gzipped_url=_first_string(fields, 13),
+        gzipped_size=_first_int(fields, 14) or 0,
+        sha1=_first_string(fields, 2),
+        sha256=_first_string(fields, 19),
     )
 
-    # Field 4 (repeated) contains BOTH cookies and OBB file metadata.
+    # Field 18: compressedAppData {1=type, 2=size, 3=url}. This is the base
+    # APK again, gzip-compressed -- it used to be downloaded as a bogus
+    # "-asset.apk" that was byte-identical to the base APK. Use it only as a
+    # fallback source for the gzipped base URL.
+    if not result.gzipped_url:
+        for c_b in _all_bytes(fields, 18):
+            cf = ProtoDecoder(c_b).read_all_ordered()
+            url = _first_string(cf, 3)
+            if url.startswith("https://") and (_first_int(cf, 1) or 0) == 2:
+                result.gzipped_url = url
+                result.gzipped_size = _first_int(cf, 2) or 0
+                break
+
+    # Cookies (field 5, repeated: 1=name, 2=value).
+    for c_b in _all_bytes(fields, 5):
+        cf = ProtoDecoder(c_b).read_all_ordered()
+        f1_wt = next((wt for fn, wt, _ in cf if fn == 1), None)
+        if f1_wt == 2:
+            name = _first_string(cf, 1)
+            if name:
+                result.cookies.append({"name": name, "value": _first_string(cf, 2)})
+
+    # Field 4 (repeated) has carried BOTH cookies and OBB file metadata.
     # Cookies have f1=string(name), f2=string(value).
     # OBB entries have f1=varint(fileType), f2=varint(versionCode),
     # f3=varint(size), f4=string(downloadUrl), f7=string(compressedUrl).
@@ -318,31 +384,29 @@ def _extract_delivery_from_fields(fields: list[tuple[int, int, Any]]) -> Deliver
                     gzipped=False,
                 ))
 
-    # Splits (field 15, repeated: 1=name, 2=size, 5=downloadUrl)
+    # Splits (field 15, repeated).
     for split_b in _all_bytes(fields, 15):
         sf = ProtoDecoder(split_b).read_all_ordered()
         name = _first_string(sf, 1)
         url = _first_string(sf, 5)
-        if url:
-            result.splits.append(SplitInfo(
-                name=name or f"split{len(result.splits)}",
-                url=url,
-                size=_first_int(sf, 2) or 0,
-            ))
-
-    # Field 18 (repeated): asset pack APKs (fileType=2, gzip-compressed).
-    # Structure: f1=fileType, f2=size, f3=downloadUrl (string or sub-message).
-    for af_b in _all_bytes(fields, 18):
-        af = ProtoDecoder(af_b).read_all_ordered()
-        url = _first_string(af, 3)
-        if url and url.startswith("https://"):
-            ft = _first_int(af, 1) or 0
-            result.additional_files.append(AdditionalFile(
-                file_type=ft,
-                size=_first_int(af, 2) or 0,
-                url=url,
-                gzipped=ft == 2,
-            ))
+        if not url:
+            continue
+        gz_url = _first_string(sf, 6)
+        gz_size = _first_int(sf, 3) or 0
+        if not gz_url:
+            g_b = _first_bytes(sf, 8)
+            if g_b:
+                gf = ProtoDecoder(g_b).read_all_ordered()
+                if (_first_int(gf, 1) or 0) == 2:
+                    gz_url = _first_string(gf, 3)
+                    gz_size = _first_int(gf, 2) or 0
+        result.splits.append(SplitInfo(
+            name=name or f"split{len(result.splits)}",
+            url=url,
+            size=_first_int(sf, 2) or 0,
+            gzipped_url=gz_url,
+            gzipped_size=gz_size,
+        ))
 
     return result
 
@@ -360,10 +424,21 @@ def _extract_delivery_from_tree(raw: bytes) -> DeliveryResult:
     return result
 
 
-def get_delivery(package: str, version_code: int, auth: dict) -> DeliveryResult:
-    """Fetch download URLs for base APK, splits, and OBB files."""
+def get_delivery(
+    package: str,
+    version_code: int,
+    auth: dict,
+    delivery_token: str = "",
+) -> DeliveryResult:
+    """Fetch download URLs for base APK, splits, and OBB files.
+
+    *delivery_token* is the token the purchase endpoint hands back; passing
+    it along matches what the Play client does.
+    """
     headers = _proto_headers(auth)
     url = f"{DELIVERY_URL}?doc={package}&ot=1&vc={version_code}"
+    if delivery_token:
+        url += f"&dtok={delivery_token}"
     resp = httpx.get(url, headers=headers, timeout=30)
     if resp.status_code == 401:
         raise AuthExpiredError("Auth token expired.")
@@ -373,6 +448,17 @@ def get_delivery(package: str, version_code: int, auth: dict) -> DeliveryResult:
     result = _parse_delivery(resp.content)
 
     if not result.download_url:
+        status = _first_int(_navigate(resp.content, 1, 21), 1)
+        if status == 2:
+            raise AppNotSupportedError(
+                f"Google Play does not serve version {version_code} of "
+                f"{package} to the current device profile."
+            )
+        if status == 3:
+            raise AppNotPurchasedError(
+                f"The account has not acquired {package}; it may be a paid "
+                "app or unavailable in the account's region."
+            )
         raise PlayAPIError(
             "No download URL returned. The app may require purchase or "
             "is unavailable for this device."

@@ -84,6 +84,24 @@ FALLBACK_PROFILE = {
 # that restricted apps (banking apps like Chase) tolerate. Pixel 9a first.
 _PRIORITY_ARM64 = ["Pv", "D2", "eV", "iq", "Fj", "HE", "VP", "Hb", "p6", "B1"]
 _PRIORITY_ARMV7 = ["XK", "Gj", "IV", "Gb"]
+_PRIORITY_X86 = ["x8", "7M"]
+_PRIORITY_TV = ["Gb"]
+
+# ABI token to look for in a profile's Platforms list, per --arch value.
+ABI_TOKENS = {
+    "arm64": "arm64-v8a",
+    "armv7": "armeabi-v7a",
+    "x86": "x86",
+    "x86_64": "x86_64",
+}
+
+# Features that mark a device profile as an Android TV.
+_TV_FEATURES = ("android.hardware.type.television", "android.software.leanback")
+
+
+def is_tv_profile(profile: dict) -> bool:
+    features = profile.get("Features", "")
+    return any(f in features for f in _TV_FEATURES)
 
 
 def _load_properties(filepath: Path) -> dict:
@@ -130,12 +148,30 @@ ARM64_PROFILES: list[tuple[str, dict]] = [
 ARMV7_PROFILES: list[tuple[str, dict]] = [
     (k, d["profile"]) for k, d in _ALL.items() if d["arch"] == "armv7"
 ]
+TV_PROFILES: list[tuple[str, dict]] = [
+    (k, d["profile"]) for k, d in _ALL.items() if is_tv_profile(d["profile"])
+]
+
+
+def _profiles_supporting(abi_token: str) -> list[tuple[str, dict]]:
+    """All profiles whose Platforms list contains *abi_token*."""
+    return [
+        (k, d["profile"]) for k, d in _ALL.items()
+        if abi_token in d["profile"].get("Platforms", "")
+    ]
 
 
 def get_priority_profiles(arch: str = "arm64") -> list[tuple[str, dict]]:
-    """Return profiles ordered by reliability (best first)."""
+    """Return profiles ordered by reliability (best first).
+
+    *arch* is an ABI family, or "tv" for Android TV devices.
+    """
     if arch == "armv7":
         priority, pool = _PRIORITY_ARMV7, ARMV7_PROFILES
+    elif arch in ("x86", "x86_64"):
+        priority, pool = _PRIORITY_X86, _profiles_supporting(ABI_TOKENS[arch])
+    elif arch == "tv":
+        priority, pool = _PRIORITY_TV, TV_PROFILES
     else:
         priority, pool = _PRIORITY_ARM64, ARM64_PROFILES
 
@@ -154,4 +190,54 @@ def get_priority_profiles(arch: str = "arm64") -> list[tuple[str, dict]]:
             result.append((pkey, profile))
             seen.add(pkey)
 
+    return result
+
+
+def get_compat_profiles(arch: str = "arm64") -> list[tuple[str, dict]]:
+    """Profiles most likely to be served old or unusual app versions.
+
+    Google refuses delivery (status 2) when a version does not match the
+    device: 2014-era APKs are often armeabi-v7a only, and Android 14+
+    profiles are not served APKs targeting very old SDKs. So prefer low-SDK
+    devices that support many ABIs.
+    """
+    if arch == "tv":
+        pool = list(TV_PROFILES)
+    else:
+        pool = _profiles_supporting(ABI_TOKENS.get(arch, "arm64-v8a"))
+
+    def sort_key(item: tuple[str, dict]) -> tuple[int, int]:
+        profile = item[1]
+        try:
+            sdk = int(profile.get("Build.VERSION.SDK_INT", "99"))
+        except ValueError:
+            sdk = 99
+        abi_count = len(profile.get("Platforms", "").split(","))
+        return (sdk, -abi_count)
+
+    return sorted(pool, key=sort_key)
+
+
+def get_discovery_profiles(arch: str = "arm64") -> list[tuple[str, dict]]:
+    """Profiles for apps that are invisible to the usual phone profiles.
+
+    An app can be limited to a form factor (Android TV) or an ABI family
+    (armv7-only, x86-only), so trying many similar phones does not help.
+    Instead try one device of each kind: the most compatible device of the
+    requested family, every TV, then the most compatible device of each
+    other ABI family.
+    """
+    candidates: list[tuple[str, dict]] = []
+    candidates += get_compat_profiles(arch)[:1]
+    candidates += TV_PROFILES
+    for other in ("armv7", "arm64", "x86_64"):
+        if other != arch:
+            candidates += get_compat_profiles(other)[:1]
+
+    seen: set[str] = set()
+    result: list[tuple[str, dict]] = []
+    for key, profile in candidates:
+        if key not in seen:
+            seen.add(key)
+            result.append((key, profile))
     return result
