@@ -4,6 +4,13 @@ Download APKs from Google Play right from your terminal. One command gets you th
 
 gplaydl downloads through a Google account you add yourself in the Authenticator app. Your account stays private to you, and setup takes about two minutes.
 
+Prefer a browser? Use [gplaydl web](https://gplaydl.com), or view its
+[source code](https://github.com/rehmatworks/gplaydl-web).
+
+> **Important:** This project uses unofficial Google Play access. Google may
+> flag, lock, or restrict accounts used with it. Please use a separate account
+> and continue at your own risk.
+
 - Base APK, splits, OBB files and asset packs downloaded together by default
 - arm64, armv7, x86, x86_64 and Android TV builds, several in one command
 - Signs in with your own account, kept private to you and never shared
@@ -114,7 +121,7 @@ failing later at install time.
 Re-runs are incremental. A file that already exists and matches its declared
 hash is skipped, so running the same command again with an extra
 architecture (`-a arm64,armv7`) or more languages (`-l de,fr`) downloads
-only the missing splits into the same directory -- and a corrupted file is
+only the missing splits into the same directory. A corrupted file is
 noticed and fetched again.
 
 `--dm` additionally fetches the DEX metadata file (`{package}-{vc}.dm`, a
@@ -130,8 +137,8 @@ until Google agrees to deliver.
 
 Apps that are invisible to phone profiles altogether (Android TV exclusives
 like `com.google.android.katniss`, or apps limited to one ABI family) are
-found the same way: gplaydl rotates through one device of each kind — TV,
-then each ABI family — before giving up. Pass `-a tv` to skip straight to a
+found the same way: gplaydl rotates through one device of each kind, starting
+with TV and then each ABI family. Pass `-a tv` to skip straight to a
 TV profile, or run `gplaydl auth --arch tv` if you just want a TV token
 (`~/.config/gplaydl/auth-tv.json`).
 
@@ -148,7 +155,7 @@ when other APKs sit in the same directory: adb refuses sessions that mix
 packages or contain the same split twice.)
 
 **Want a single APK instead of splits?** Google Play has no universal APK
-for App Bundle apps -- every client, including the Play Store itself,
+for App Bundle apps. Every client, including the Play Store itself,
 receives the base plus config splits and installs them as one session. The
 base APK alone will not run (its native libraries live in the
 `config.<abi>` split). If you truly need one file, merge the splits with a
@@ -206,6 +213,12 @@ for apps that publish one APK per ABI) land next to each other.
 ## Upgrading from 3.x
 
 gplaydl 4 drops the shared community pool: downloads now go through a Google account you add yourself, kept private to you. Add an account in the Authenticator app and run `gplaydl link` once after upgrading. (Older 2.x releases borrowed anonymous tokens from Aurora Store; that path is gone.)
+
+## Related projects
+
+- [gplaydl web](https://gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-web)) for downloading from a browser
+- [gplaydl Authenticator](https://dispenser.gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-authenticator)) for adding your Google account
+- [gplaydl dispenser](https://dispenser.gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-dispenser)) for private account and token management
 
 ## License
 

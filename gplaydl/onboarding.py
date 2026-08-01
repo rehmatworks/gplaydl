@@ -134,8 +134,12 @@ def _walkthrough_panel(console: Console, base: str, first_run: bool) -> Panel:
         if first_run
         else "Linking replaces any key this machine already holds:"
     )
+    warning = (
+        "[yellow]Google may flag, lock, or restrict accounts used with unofficial "
+        "clients. Please use a separate account and continue at your own risk.[/yellow]"
+    )
     return Panel(
-        Group(intro, "", _steps_table(base)),
+        Group(intro, "", warning, "", _steps_table(base)),
         title="[bold]Set up gplaydl (One-time)[/bold]" if first_run else "[bold]Link gplaydl[/bold]",
         title_align="left",
         border_style="bright_black",
@@ -157,6 +161,8 @@ def _steps_table(base: str) -> Table:
 
 def _steps_text(base: str) -> str:
     return (
+        "  Google may flag, lock, or restrict accounts used with unofficial clients.\n"
+        "  Please use a separate account and continue at your own risk.\n\n"
         f"  1. Install the Authenticator app on any Android phone: {base}\n"
         "  2. Sign in with a spare Google account (it stays private to you).\n"
         "  3. Open Link gplaydl in the app and run gplaydl link with the code."
