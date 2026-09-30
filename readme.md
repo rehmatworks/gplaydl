@@ -22,6 +22,10 @@ Prefer a browser? Use [gplaydl web](https://gplaydl.com), or view its
 - Pure-Python protobuf decoding, no `gpapi` dependency
 - Live progress bars, plus `search`, `info` and `list-splits` for browsing
 
+<a href="https://rovelix.app">
+  <img src="https://raw.githubusercontent.com/rehmatworks/gplaydl/main/.github/assets/rovelix.jpg" alt="Rovelix: turn your Google Play portfolio into websites" width="100%">
+</a>
+
 ## Installation
 
 Requires Python 3.9 or newer.
@@ -219,6 +223,11 @@ gplaydl 4 drops the shared community pool: downloads now go through a Google acc
 - [gplaydl web](https://gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-web)) for downloading from a browser
 - [gplaydl Authenticator](https://dispenser.gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-authenticator)) for adding your Google account
 - [gplaydl dispenser](https://dispenser.gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-dispenser)) for private account and token management
+- [Rovelix](https://rovelix.app) for turning your Google Play portfolio into auto-synced websites, app-ads.txt and review insights
+
+<a href="https://rovelix.app">
+  <img src="https://raw.githubusercontent.com/rehmatworks/gplaydl/main/.github/assets/rovelix.jpg" alt="Rovelix: turn your Google Play portfolio into websites" width="100%">
+</a>
 
 ## License
 
