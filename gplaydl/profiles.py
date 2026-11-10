@@ -98,10 +98,29 @@ ABI_TOKENS = {
 # Features that mark a device profile as an Android TV.
 _TV_FEATURES = ("android.hardware.type.television", "android.software.leanback")
 
+# Profiles below this SDK level (Android 10) are old-Android devices. Play
+# offers them the last build that still runs on their Android version, so
+# they are kept out of the default rotation, where landing on one would
+# quietly produce an outdated app. They are used on demand instead: for old
+# versions (get_compat_profiles) and for apps the current devices cannot see
+# (get_discovery_profiles).
+MIN_DEFAULT_SDK = 29
+
 
 def is_tv_profile(profile: dict) -> bool:
     features = profile.get("Features", "")
     return any(f in features for f in _TV_FEATURES)
+
+
+def _sdk(profile: dict) -> int:
+    try:
+        return int(profile.get("Build.VERSION.SDK_INT", "99"))
+    except ValueError:
+        return 99
+
+
+def _is_old_android(profile: dict) -> bool:
+    return _sdk(profile) < MIN_DEFAULT_SDK
 
 
 def _load_properties(filepath: Path) -> dict:
@@ -175,6 +194,8 @@ def get_priority_profiles(arch: str = "arm64") -> list[tuple[str, dict]]:
     else:
         priority, pool = _PRIORITY_ARM64, ARM64_PROFILES
 
+    pool = [item for item in pool if not _is_old_android(item[1])]
+
     seen: set[str] = set()
     result: list[tuple[str, dict]] = []
 
@@ -208,31 +229,39 @@ def get_compat_profiles(arch: str = "arm64") -> list[tuple[str, dict]]:
 
     def sort_key(item: tuple[str, dict]) -> tuple[int, int]:
         profile = item[1]
-        try:
-            sdk = int(profile.get("Build.VERSION.SDK_INT", "99"))
-        except ValueError:
-            sdk = 99
         abi_count = len(profile.get("Platforms", "").split(","))
-        return (sdk, -abi_count)
+        return (_sdk(profile), -abi_count)
 
     return sorted(pool, key=sort_key)
+
+
+def _most_compatible(arch: str, *, old_android: bool) -> list[tuple[str, dict]]:
+    """The most compatible profile of *arch*, current or old-Android (0 or 1)."""
+    return [
+        item for item in get_compat_profiles(arch)
+        if _is_old_android(item[1]) == old_android
+    ][:1]
 
 
 def get_discovery_profiles(arch: str = "arm64") -> list[tuple[str, dict]]:
     """Profiles for apps that are invisible to the usual phone profiles.
 
-    An app can be limited to a form factor (Android TV) or an ABI family
-    (armv7-only, x86-only), so trying many similar phones does not help.
-    Instead try one device of each kind: the most compatible device of the
-    requested family, every TV, then the most compatible device of each
-    other ABI family.
+    An app can be limited to a form factor (Android TV), an ABI family
+    (armv7-only, x86-only) or old Android versions, so trying many similar
+    phones does not help. Instead try one device of each kind: the most
+    compatible current device of the requested family, every TV, the most
+    compatible current device of each other ABI family, and last an
+    old-Android device of each family.
     """
+    others = [a for a in ("armv7", "arm64", "x86_64") if a != arch]
+
     candidates: list[tuple[str, dict]] = []
-    candidates += get_compat_profiles(arch)[:1]
+    candidates += _most_compatible(arch, old_android=False)
     candidates += TV_PROFILES
-    for other in ("armv7", "arm64", "x86_64"):
-        if other != arch:
-            candidates += get_compat_profiles(other)[:1]
+    for other in others:
+        candidates += _most_compatible(other, old_android=False)
+    for family in [arch, *others]:
+        candidates += _most_compatible(family, old_android=True)
 
     seen: set[str] = set()
     result: list[tuple[str, dict]] = []
