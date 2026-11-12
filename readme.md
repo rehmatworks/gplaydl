@@ -22,10 +22,10 @@ Prefer a browser? Use [gplaydl web](https://gplaydl.com), or view its
 - Pure-Python protobuf decoding, no `gpapi` dependency
 - Live progress bars, plus `search`, `info` and `list-splits` for browsing
 
-<sub>**Sponsored** · Rovelix is built by the creator of gplaydl</sub>
+<sub>**Sponsored** · GpAPI: Google Play data as JSON, no Google account required</sub>
 
-<a href="https://rovelix.app">
-  <img src="https://raw.githubusercontent.com/rehmatworks/gplaydl/main/.github/assets/rovelix.jpg" alt="Rovelix: turn your Google Play portfolio into websites" width="100%">
+<a href="https://gpapi.co">
+  <img src="https://raw.githubusercontent.com/rehmatworks/gplaydl/main/.github/assets/gpapi-banner.jpg" alt="GpAPI: Google Play app details, reviews and developer data as JSON" width="100%">
 </a>
 
 ## Installation
@@ -225,12 +225,12 @@ gplaydl 4 drops the shared community pool: downloads now go through a Google acc
 - [gplaydl web](https://gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-web)) for downloading from a browser
 - [gplaydl Authenticator](https://dispenser.gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-authenticator)) for adding your Google account
 - [gplaydl dispenser](https://dispenser.gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-dispenser)) for private account and token management
-- [Rovelix](https://rovelix.app) (sponsored) for turning your Google Play portfolio into auto-synced websites, app-ads.txt and review insights
+- [GpAPI](https://gpapi.co) (sponsored) for Google Play app details, reviews and developer data as JSON, without a Google account
 
-<sub>**Sponsored** · Rovelix is built by the creator of gplaydl</sub>
+<sub>**Sponsored** · GpAPI: Google Play data as JSON, no Google account required</sub>
 
-<a href="https://rovelix.app">
-  <img src="https://raw.githubusercontent.com/rehmatworks/gplaydl/main/.github/assets/rovelix.jpg" alt="Rovelix: turn your Google Play portfolio into websites" width="100%">
+<a href="https://gpapi.co">
+  <img src="https://raw.githubusercontent.com/rehmatworks/gplaydl/main/.github/assets/gpapi-banner.jpg" alt="GpAPI: Google Play app details, reviews and developer data as JSON" width="100%">
 </a>
 
 ## License
