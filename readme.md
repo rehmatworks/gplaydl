@@ -19,7 +19,7 @@ Prefer a browser? Use [gplaydl web](https://gplaydl.com), or view its
 - Compressed transfers when Google Play offers them (often 30-40% smaller)
 - Every APK verified against the SHA-256 Google Play declares for it
 - Language splits on demand, and re-runs fetch only what is missing
-- Pure-Python protobuf decoding, no `gpapi` dependency
+- Pure-Python protobuf decoding
 - Live progress bars, plus `search`, `info` and `list-splits` for browsing
 
 <sub>**Sponsored** · GpAPI: Google Play data as JSON, no Google account required</sub>
