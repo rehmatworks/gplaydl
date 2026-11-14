@@ -22,11 +22,22 @@ Prefer a browser? Use [gplaydl web](https://gplaydl.com), or view its
 - Pure-Python protobuf decoding
 - Live progress bars, plus `search`, `info` and `list-splits` for browsing
 
-<sub>**Sponsored** · GpAPI: Google Play data as JSON, no Google account required</sub>
-
-<a href="https://gpapi.co">
-  <img src="https://raw.githubusercontent.com/rehmatworks/gplaydl/main/.github/assets/gpapi-banner.jpg" alt="GpAPI: Google Play app details, reviews and developer data as JSON" width="100%">
-</a>
+<table>
+  <tr>
+    <td width="72">
+      <a href="https://androidpot.net/apk-downloader"><img src="https://dl.androidpot.net/apps/net.androidpot.app/icon-44e415eaee-192.png" alt="AndroidPot" width="56" height="56"></a>
+    </td>
+    <td>
+      <strong>No Google account? Try <a href="https://androidpot.net">AndroidPot</a>.</strong>
+      Paste a Google Play link or package name into the
+      <a href="https://androidpot.net/apk-downloader">AndroidPot APK downloader</a>
+      and get the APK, no Google account required. Split APKs and OBB files come
+      packed into a single XAPK. On your phone, the
+      <a href="https://androidpot.net/apps/androidpot-apk">AndroidPot app</a>
+      finds and installs apps in one tap.
+    </td>
+  </tr>
+</table>
 
 ## Installation
 
@@ -46,6 +57,9 @@ pip install .
 ## First-time setup
 
 You will need any Android phone for a couple of minutes, and a spare Google account to add.
+
+> **No spare account?** The [AndroidPot APK downloader](https://androidpot.net/apk-downloader)
+> gets APKs from Google Play without any Google account.
 
 1. Install the [gplaydl Authenticator](https://dispenser.gplaydl.com) app ([source](https://github.com/rehmatworks/gplaydl-authenticator)) on the phone. It is not on Google Play, so Android will ask you to allow the install.
 2. Sign in with a spare Google account. Prefer a throwaway over your main one: Google sometimes restricts accounts it sees on unofficial clients. The account stays private to you and is never shared with anyone.
@@ -225,13 +239,7 @@ gplaydl 4 drops the shared community pool: downloads now go through a Google acc
 - [gplaydl web](https://gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-web)) for downloading from a browser
 - [gplaydl Authenticator](https://dispenser.gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-authenticator)) for adding your Google account
 - [gplaydl dispenser](https://dispenser.gplaydl.com) ([source](https://github.com/rehmatworks/gplaydl-dispenser)) for private account and token management
-- [GpAPI](https://gpapi.co) (sponsored) for Google Play app details, reviews and developer data as JSON, without a Google account
-
-<sub>**Sponsored** · GpAPI: Google Play data as JSON, no Google account required</sub>
-
-<a href="https://gpapi.co">
-  <img src="https://raw.githubusercontent.com/rehmatworks/gplaydl/main/.github/assets/gpapi-banner.jpg" alt="GpAPI: Google Play app details, reviews and developer data as JSON" width="100%">
-</a>
+- [AndroidPot](https://androidpot.net) for downloading APKs without any Google account, in a browser with the [APK downloader](https://androidpot.net/apk-downloader) or on your phone with the [AndroidPot app](https://androidpot.net/apps/androidpot-apk)
 
 ## License
 

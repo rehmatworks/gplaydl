@@ -127,6 +127,12 @@ def _label() -> str:
     return (platform.node() or "gplaydl")[:64]
 
 
+_NO_ACCOUNT_HINT = (
+    "No Google account to spare? AndroidPot downloads APKs without one: "
+    "https://androidpot.net/apk-downloader"
+)
+
+
 def _walkthrough_panel(console: Console, base: str, first_run: bool) -> Panel:
     intro = (
         "gplaydl downloads through a Google account you add yourself. This is a "
@@ -139,7 +145,7 @@ def _walkthrough_panel(console: Console, base: str, first_run: bool) -> Panel:
         "clients. Please use a separate account and continue at your own risk.[/yellow]"
     )
     return Panel(
-        Group(intro, "", warning, "", _steps_table(base)),
+        Group(intro, "", warning, "", _steps_table(base), "", f"[dim]{_NO_ACCOUNT_HINT}[/dim]"),
         title="[bold]Set up gplaydl (One-time)[/bold]" if first_run else "[bold]Link gplaydl[/bold]",
         title_align="left",
         border_style="bright_black",
@@ -165,7 +171,8 @@ def _steps_text(base: str) -> str:
         "  Please use a separate account and continue at your own risk.\n\n"
         f"  1. Install the Authenticator app on any Android phone: {base}\n"
         "  2. Sign in with a spare Google account (it stays private to you).\n"
-        "  3. Open Link gplaydl in the app and run gplaydl link with the code."
+        "  3. Open Link gplaydl in the app and run gplaydl link with the code.\n\n"
+        f"  {_NO_ACCOUNT_HINT}"
     )
 
 
