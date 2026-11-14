@@ -86,6 +86,8 @@ _PRIORITY_ARM64 = ["Pv", "D2", "eV", "iq", "Fj", "HE", "VP", "Hb", "p6", "B1"]
 _PRIORITY_ARMV7 = ["XK", "Gj", "IV", "Gb"]
 _PRIORITY_X86 = ["x8", "7M"]
 _PRIORITY_TV = ["Gb"]
+# Watches: the current Wear OS build first, the Android 13 one as a fallback.
+_PRIORITY_WEAR = ["w7", "w3"]
 
 # ABI token to look for in a profile's Platforms list, per --arch value.
 ABI_TOKENS = {
@@ -97,6 +99,9 @@ ABI_TOKENS = {
 
 # Features that mark a device profile as an Android TV.
 _TV_FEATURES = ("android.hardware.type.television", "android.software.leanback")
+
+# Feature that marks a device profile as a Wear OS watch.
+_WATCH_FEATURE = "android.hardware.type.watch"
 
 # Profiles below this SDK level (Android 10) are old-Android devices. Play
 # offers them the last build that still runs on their Android version, so
@@ -110,6 +115,10 @@ MIN_DEFAULT_SDK = 29
 def is_tv_profile(profile: dict) -> bool:
     features = profile.get("Features", "")
     return any(f in features for f in _TV_FEATURES)
+
+
+def is_watch_profile(profile: dict) -> bool:
+    return _WATCH_FEATURE in profile.get("Features", "").split(",")
 
 
 def _sdk(profile: dict) -> int:
@@ -143,7 +152,11 @@ def load_all_profiles() -> dict:
     for fp in sorted(PROFILES_DIR.glob("*.properties")):
         profile = _load_properties(fp)
         platforms = profile.get("Platforms", "")
-        if "arm64-v8a" in platforms:
+        if is_watch_profile(profile):
+            # A watch is its own device type, whatever its ABI: Play shows
+            # it watch apps only, so it must stay out of the phone pools.
+            arch = "wear"
+        elif "arm64-v8a" in platforms:
             arch = "arm64"
         elif "armeabi-v7a" in platforms:
             arch = "armv7"
@@ -170,20 +183,25 @@ ARMV7_PROFILES: list[tuple[str, dict]] = [
 TV_PROFILES: list[tuple[str, dict]] = [
     (k, d["profile"]) for k, d in _ALL.items() if is_tv_profile(d["profile"])
 ]
+WEAR_PROFILES: list[tuple[str, dict]] = [
+    (k, d["profile"]) for k, d in _ALL.items() if d["arch"] == "wear"
+]
 
 
 def _profiles_supporting(abi_token: str) -> list[tuple[str, dict]]:
-    """All profiles whose Platforms list contains *abi_token*."""
+    """All non-watch profiles whose Platforms list contains *abi_token*."""
     return [
         (k, d["profile"]) for k, d in _ALL.items()
-        if abi_token in d["profile"].get("Platforms", "")
+        if d["arch"] != "wear"
+        and abi_token in d["profile"].get("Platforms", "")
     ]
 
 
 def get_priority_profiles(arch: str = "arm64") -> list[tuple[str, dict]]:
     """Return profiles ordered by reliability (best first).
 
-    *arch* is an ABI family, or "tv" for Android TV devices.
+    *arch* is an ABI family, "tv" for Android TV devices, or "wear" for
+    Wear OS watches.
     """
     if arch == "armv7":
         priority, pool = _PRIORITY_ARMV7, ARMV7_PROFILES
@@ -191,6 +209,8 @@ def get_priority_profiles(arch: str = "arm64") -> list[tuple[str, dict]]:
         priority, pool = _PRIORITY_X86, _profiles_supporting(ABI_TOKENS[arch])
     elif arch == "tv":
         priority, pool = _PRIORITY_TV, TV_PROFILES
+    elif arch == "wear":
+        priority, pool = _PRIORITY_WEAR, WEAR_PROFILES
     else:
         priority, pool = _PRIORITY_ARM64, ARM64_PROFILES
 
@@ -224,6 +244,8 @@ def get_compat_profiles(arch: str = "arm64") -> list[tuple[str, dict]]:
     """
     if arch == "tv":
         pool = list(TV_PROFILES)
+    elif arch == "wear":
+        pool = list(WEAR_PROFILES)
     else:
         pool = _profiles_supporting(ABI_TOKENS.get(arch, "arm64-v8a"))
 
@@ -246,18 +268,19 @@ def _most_compatible(arch: str, *, old_android: bool) -> list[tuple[str, dict]]:
 def get_discovery_profiles(arch: str = "arm64") -> list[tuple[str, dict]]:
     """Profiles for apps that are invisible to the usual phone profiles.
 
-    An app can be limited to a form factor (Android TV), an ABI family
-    (armv7-only, x86-only) or old Android versions, so trying many similar
-    phones does not help. Instead try one device of each kind: the most
-    compatible current device of the requested family, every TV, the most
-    compatible current device of each other ABI family, and last an
-    old-Android device of each family.
+    An app can be limited to a form factor (Android TV, Wear OS), an ABI
+    family (armv7-only, x86-only) or old Android versions, so trying many
+    similar phones does not help. Instead try one device of each kind: the
+    most compatible current device of the requested family, every TV, every
+    watch, the most compatible current device of each other ABI family, and
+    last an old-Android device of each family.
     """
     others = [a for a in ("armv7", "arm64", "x86_64") if a != arch]
 
     candidates: list[tuple[str, dict]] = []
     candidates += _most_compatible(arch, old_android=False)
     candidates += TV_PROFILES
+    candidates += get_priority_profiles("wear")
     for other in others:
         candidates += _most_compatible(other, old_android=False)
     for family in [arch, *others]:

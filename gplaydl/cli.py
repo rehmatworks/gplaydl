@@ -36,7 +36,7 @@ from gplaydl.download import DownloadError, DownloadSpec, download_batch
 from gplaydl.onboarding import ensure_linked, link as run_link
 from gplaydl.profiles import ABI_TOKENS, get_compat_profiles, get_discovery_profiles
 
-VALID_ARCHS = tuple(ABI_TOKENS) + ("tv",)  # arm64, armv7, x86, x86_64, tv
+VALID_ARCHS = tuple(ABI_TOKENS) + ("tv", "wear")  # arm64, armv7, x86, x86_64, tv, wear
 MAX_COMPAT_RETRIES = 6
 
 console = Console()
@@ -83,7 +83,7 @@ def link(
 
 @app.command()
 def auth(
-    arch: str = typer.Option("arm64", help="Device type: arm64, armv7, x86, x86_64 or tv."),
+    arch: str = typer.Option("arm64", help="Device type: arm64, armv7, x86, x86_64, tv or wear."),
     dispenser: Optional[str] = typer.Option(None, "--dispenser", "-d", help="Custom dispenser URL."),
     email: Optional[str] = typer.Option(None, "--email", "-e", help="Pick a specific account by address when you linked several."),
     clear: bool = typer.Option(False, "--clear", help="Remove all cached tokens."),
@@ -238,8 +238,9 @@ def download(
     output: Path = typer.Option(".", "--output", "-o", help="Output directory."),
     arch: str = typer.Option(
         "arm64", "--arch", "-a",
-        help="Device type: arm64, armv7, x86, x86_64 or tv (Android TV). "
-             "Comma-separate to download several at once (e.g. arm64,armv7).",
+        help="Device type: arm64, armv7, x86, x86_64, tv (Android TV) or "
+             "wear (Wear OS). Comma-separate to download several at once "
+             "(e.g. arm64,armv7).",
     ),
     version: Optional[int] = typer.Option(None, "--version", "-v", help="Specific version code."),
     locale: Optional[str] = typer.Option(
@@ -462,10 +463,11 @@ def _acquire(
             return flow(auth_data)
     except AppNotAvailableError as exc:
         # Invisible to this device: maybe a form-factor exclusive (Android
-        # TV) or limited to another ABI family. Try one device of each kind.
+        # TV, Wear OS) or limited to another ABI family. Try one device of
+        # each kind.
         rprint(
             "[yellow]Not visible to the current device profile; trying "
-            "other device types (TV, other ABIs)...[/yellow]"
+            "other device types (TV, Wear OS, other ABIs)...[/yellow]"
         )
         result = retry_with(get_discovery_profiles(arch))
         if result:

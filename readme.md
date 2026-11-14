@@ -12,7 +12,8 @@ Prefer a browser? Use [gplaydl web](https://gplaydl.com), or view its
 > and continue at your own risk.
 
 - Base APK, splits, OBB files and asset packs downloaded together by default
-- arm64, armv7, x86, x86_64 and Android TV builds, several in one command
+- arm64, armv7, x86, x86_64, Android TV and Wear OS builds, several in one
+  command
 - Signs in with your own account, kept private to you and never shared
 - Device profiles rotated automatically, both for authentication and for old
   versions Google only serves to certain devices
@@ -126,6 +127,7 @@ gplaydl download com.whatsapp -a armv7       # ARMv7 build
 gplaydl download com.whatsapp -a arm64,armv7 # several architectures at once
 gplaydl download org.videolan.vlc -a x86_64  # emulator / desktop build
 gplaydl download com.google.android.katniss -a tv  # Android TV build
+gplaydl download com.spotify.music -a wear   # Wear OS (watch) build
 gplaydl download com.whatsapp -v 231205015   # specific version code
 gplaydl download com.whatsapp -l de,fr,zh-CN # extra language splits
 gplaydl download com.whatsapp --no-splits    # skip split APKs
@@ -156,11 +158,16 @@ happens, gplaydl retries automatically with low-SDK multi-ABI device profiles
 until Google agrees to deliver.
 
 Apps that are invisible to phone profiles altogether (Android TV exclusives
-like `com.google.android.katniss`, or apps limited to one ABI family) are
-found the same way: gplaydl rotates through one device of each kind, starting
-with TV and then each ABI family. Pass `-a tv` to skip straight to a
-TV profile, or run `gplaydl auth --arch tv` if you just want a TV token
+like `com.google.android.katniss`, Wear OS-only apps, or apps limited to one
+ABI family) are found the same way: gplaydl rotates through one device of
+each kind, starting with TV, then Wear OS, then each ABI family. Pass
+`-a tv` or `-a wear` to skip straight to a TV or watch profile, or run
+`gplaydl auth --arch tv` if you just want a TV token
 (`~/.config/gplaydl/auth-tv.json`).
+
+Apps that ship for both phones and watches usually publish a separate Wear
+OS build under the same package name. A plain download gets the phone
+build; `-a wear` gets the watch one.
 
 | Type | Naming | Example |
 |------|--------|---------|
@@ -218,6 +225,7 @@ The dispenser is open source and runs anywhere Go and Postgres do. Host your own
 | `x86_64` | x86_64 | Emulators, Chromebooks, desktop |
 | `x86` | x86 | Older 32-bit emulators |
 | `tv` | armeabi-v7a | Android TV / Google TV devices |
+| `wear` | armeabi-v7a | Wear OS watches |
 
 Pass several at once to `download` with a comma: `-a arm64,armv7`. The base
 APK is shared where possible and per-architecture splits (or separate builds,
